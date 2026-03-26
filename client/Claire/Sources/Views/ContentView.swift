@@ -5,39 +5,62 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            // Animated ambient background with audio energy
             AudioEnergyBackground()
                 .ignoresSafeArea()
 
-            VStack {
-                // Top bar
+            VStack(spacing: 0) {
                 TopBar()
+                    .padding(.top, 16)
 
                 Spacer()
 
-                // Center content depends on call state
-                if callManager.state == .idle {
-                    IdleView()
-                } else {
-                    // Status text during call
-                    if !callManager.statusMessage.isEmpty {
-                        Text(callManager.statusMessage)
-                            .font(.system(size: 15))
-                            .foregroundColor(.white.opacity(0.7))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 24)
-                            .lineLimit(3)
-                    }
-                }
+                CenterContent()
 
                 Spacer()
 
-                // Bottom controls
                 BottomBar()
+                    .padding(.bottom, 12)
             }
-            .padding()
+            .padding(.horizontal, 20)
         }
         .preferredColorScheme(.dark)
+        #if os(macOS)
+        .frame(minWidth: 380, idealWidth: 420, minHeight: 600, idealHeight: 720)
+        #endif
+    }
+}
+
+// MARK: - Center Content
+
+struct CenterContent: View {
+    @EnvironmentObject var callManager: CallManager
+
+    var body: some View {
+        if callManager.state == .idle {
+            IdleView()
+        } else if callManager.state == .connecting {
+            VStack(spacing: 16) {
+                ProgressView()
+                    .scaleEffect(1.2)
+                    .tint(.white.opacity(0.6))
+                Text("Connecting...")
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+        } else {
+            // In-call: show transcript
+            VStack(spacing: 12) {
+                if !callManager.statusMessage.isEmpty {
+                    Text(callManager.statusMessage)
+                        .font(.system(size: 17, weight: .regular, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                        .lineLimit(4)
+                        .animation(.easeInOut(duration: 0.2), value: callManager.statusMessage)
+                }
+            }
+            .padding(.horizontal, 16)
+        }
     }
 }
 
@@ -50,75 +73,59 @@ struct AudioEnergyBackground: View {
         TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
             Canvas { context, size in
                 let time = timeline.date.timeIntervalSinceReferenceDate
-
-                // Base dark background
-                context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.black))
+                context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(white: 0.04)))
 
                 if callManager.state == .connected {
                     let micLevel = CGFloat(callManager.userLevel)
                     let ttsLevel = CGFloat(callManager.streamingLevel)
 
-                    // Mic energy: warm blue/cyan glow from bottom-left
-                    if micLevel > 0.01 || callManager.isSpeaking {
-                        let intensity = callManager.isSpeaking ? max(micLevel, 0.3) : micLevel
-                        let radius = size.width * (0.3 + intensity * 0.5)
-                        let pulse = sin(time * 4) * 0.1 + 0.9
-                        let cx = size.width * 0.25
-                        let cy = size.height * 0.7
-
-                        let micGradient = Gradient(colors: [
-                            Color(red: 0.1, green: 0.5, blue: 0.9).opacity(intensity * pulse * 0.6),
-                            Color(red: 0.05, green: 0.3, blue: 0.7).opacity(intensity * pulse * 0.3),
+                    // Mic energy: cool blue from bottom
+                    let micIntensity = callManager.isSpeaking ? max(micLevel, 0.25) : micLevel * 0.5
+                    if micIntensity > 0.01 {
+                        let r = size.width * (0.4 + micIntensity * 0.4)
+                        let p = CGFloat(sin(time * 3.5) * 0.08 + 0.92)
+                        let cx = size.width * 0.35
+                        let cy = size.height * 0.75
+                        let grad = Gradient(colors: [
+                            Color(red: 0.16, green: 0.38, blue: 1.0).opacity(micIntensity * p * 0.45),
+                            Color(red: 0.08, green: 0.22, blue: 0.7).opacity(micIntensity * p * 0.2),
                             Color.clear,
                         ])
                         context.fill(
-                            Path(ellipseIn: CGRect(
-                                x: cx - radius, y: cy - radius,
-                                width: radius * 2, height: radius * 2
-                            )),
-                            with: .radialGradient(micGradient,
-                                center: CGPoint(x: cx, y: cy),
-                                startRadius: 0, endRadius: radius)
+                            Path(ellipseIn: CGRect(x: cx - r, y: cy - r, width: r * 2, height: r * 2)),
+                            with: .radialGradient(grad, center: CGPoint(x: cx, y: cy), startRadius: 0, endRadius: r)
                         )
                     }
 
-                    // TTS energy: warm amber/gold glow from top-right
+                    // TTS energy: warm amber from top-right
                     if ttsLevel > 0.01 {
-                        let radius = size.width * (0.3 + ttsLevel * 0.6)
-                        let pulse = sin(time * 3 + 1.5) * 0.1 + 0.9
-                        let cx = size.width * 0.75
-                        let cy = size.height * 0.3
-
-                        let ttsGradient = Gradient(colors: [
-                            Color(red: 0.9, green: 0.6, blue: 0.1).opacity(ttsLevel * pulse * 0.5),
-                            Color(red: 0.7, green: 0.4, blue: 0.05).opacity(ttsLevel * pulse * 0.25),
+                        let r = size.width * (0.35 + ttsLevel * 0.5)
+                        let p = CGFloat(sin(time * 2.8 + 1.2) * 0.08 + 0.92)
+                        let cx = size.width * 0.7
+                        let cy = size.height * 0.28
+                        let grad = Gradient(colors: [
+                            Color(red: 1.0, green: 0.65, blue: 0.15).opacity(ttsLevel * p * 0.4),
+                            Color(red: 0.8, green: 0.45, blue: 0.08).opacity(ttsLevel * p * 0.18),
                             Color.clear,
                         ])
                         context.fill(
-                            Path(ellipseIn: CGRect(
-                                x: cx - radius, y: cy - radius,
-                                width: radius * 2, height: radius * 2
-                            )),
-                            with: .radialGradient(ttsGradient,
-                                center: CGPoint(x: cx, y: cy),
-                                startRadius: 0, endRadius: radius)
+                            Path(ellipseIn: CGRect(x: cx - r, y: cy - r, width: r * 2, height: r * 2)),
+                            with: .radialGradient(grad, center: CGPoint(x: cx, y: cy), startRadius: 0, endRadius: r)
                         )
                     }
                 } else {
-                    // Idle: subtle ambient glow
-                    let pulse = sin(time * 0.5) * 0.03 + 0.07
-                    let idleGradient = Gradient(colors: [
-                        Color(red: 0.15, green: 0.15, blue: 0.3).opacity(pulse),
+                    // Idle: very subtle breathing glow
+                    let breath = CGFloat(sin(time * 0.6) * 0.015 + 0.045)
+                    let grad = Gradient(colors: [
+                        Color(red: 0.16, green: 0.2, blue: 0.4).opacity(breath),
                         Color.clear,
                     ])
+                    let r = size.width * 0.5
+                    let cx = size.width * 0.5
+                    let cy = size.height * 0.4
                     context.fill(
-                        Path(ellipseIn: CGRect(
-                            x: size.width * 0.1, y: size.height * 0.2,
-                            width: size.width * 0.8, height: size.height * 0.6
-                        )),
-                        with: .radialGradient(idleGradient,
-                            center: CGPoint(x: size.width * 0.5, y: size.height * 0.4),
-                            startRadius: 0, endRadius: size.width * 0.5)
+                        Path(ellipseIn: CGRect(x: cx - r, y: cy - r, width: r * 2, height: r * 1.4)),
+                        with: .radialGradient(grad, center: CGPoint(x: cx, y: cy), startRadius: 0, endRadius: r)
                     )
                 }
             }
@@ -134,47 +141,46 @@ struct TopBar: View {
     var body: some View {
         HStack {
             Spacer()
-
-            HStack(spacing: 4) {
-                Text("Claire")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundColor(.white)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Color.white.opacity(0.15))
-            .clipShape(Capsule())
-
+            Text("Claire")
+                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white.opacity(0.9))
+                .padding(.horizontal, 20)
+                .padding(.vertical, 9)
+                .background(.ultraThinMaterial.opacity(0.6))
+                .clipShape(Capsule())
             Spacer()
         }
-        .padding(.top, 8)
     }
 }
 
-// MARK: - Idle View (Start a Call)
+// MARK: - Idle View
 
 struct IdleView: View {
     @EnvironmentObject var callManager: CallManager
+    @State private var isHovering = false
 
     var body: some View {
-        VStack(spacing: 12) {
-            Button(action: {
-                callManager.startCall()
-            }) {
+        VStack(spacing: 16) {
+            Button(action: { callManager.startCall() }) {
                 ZStack {
                     Circle()
-                        .fill(Color.white)
-                        .frame(width: 72, height: 72)
+                        .fill(.white)
+                        .frame(width: 76, height: 76)
+                        .shadow(color: Color(red: 0.16, green: 0.38, blue: 1.0).opacity(isHovering ? 0.5 : 0.2), radius: isHovering ? 20 : 10)
 
                     Image(systemName: "phone.fill")
-                        .font(.system(size: 28))
-                        .foregroundColor(Color(red: 0.16, green: 0.38, blue: 1.0))
+                        .font(.system(size: 30, weight: .medium))
+                        .foregroundStyle(Color(red: 0.16, green: 0.38, blue: 1.0))
                 }
             }
+            .buttonStyle(.plain)
+            .onHover { isHovering = $0 }
+            .scaleEffect(isHovering ? 1.06 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: isHovering)
 
             Text("Start a call")
-                .font(.system(size: 15))
-                .foregroundColor(.white.opacity(0.7))
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.45))
         }
     }
 }
@@ -185,82 +191,84 @@ struct BottomBar: View {
     @EnvironmentObject var callManager: CallManager
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             if callManager.state == .connected {
-                HStack {
-                    // Hangup button
-                    Button(action: {
-                        callManager.endCall()
-                    }) {
+                HStack(spacing: 16) {
+                    // Hangup
+                    Button(action: { callManager.endCall() }) {
                         ZStack {
                             Circle()
-                                .fill(Color.white)
-                                .frame(width: 56, height: 56)
-
+                                .fill(Color.red.opacity(0.9))
+                                .frame(width: 54, height: 54)
                             Image(systemName: "phone.down.fill")
-                                .font(.system(size: 22))
-                                .foregroundColor(.red)
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundStyle(.white)
                         }
                     }
+                    .buttonStyle(.plain)
 
-                    // Call timer
+                    // Timer
                     Text(callManager.formattedDuration)
-                        .font(.system(size: 20, weight: .medium, design: .monospaced))
-                        .foregroundColor(.white)
+                        .font(.system(size: 18, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.7))
+                        .frame(width: 55, alignment: .leading)
 
                     Spacer()
 
-                    // Mic toggle with speaking indicator
-                    Button(action: {
-                        callManager.toggleMute()
-                    }) {
+                    // Mic
+                    Button(action: { callManager.toggleMute() }) {
                         ZStack {
                             Circle()
-                                .fill(Color.white.opacity(callManager.isMuted ? 0.3 : 0.15))
-                                .frame(width: 48, height: 48)
+                                .fill(.ultraThinMaterial.opacity(0.5))
+                                .frame(width: 46, height: 46)
 
                             if callManager.isSpeaking && !callManager.isMuted {
                                 Circle()
-                                    .stroke(Color(red: 0.1, green: 0.5, blue: 0.9), lineWidth: 2)
-                                    .frame(width: 52, height: 52)
+                                    .stroke(Color(red: 0.16, green: 0.5, blue: 1.0), lineWidth: 2)
+                                    .frame(width: 50, height: 50)
+                                    .transition(.scale.combined(with: .opacity))
                             }
 
                             Image(systemName: callManager.isMuted ? "mic.slash.fill" : "mic.fill")
-                                .font(.system(size: 18))
-                                .foregroundColor(callManager.isSpeaking ? Color(red: 0.1, green: 0.5, blue: 0.9) : .white)
+                                .font(.system(size: 17))
+                                .foregroundStyle(callManager.isSpeaking && !callManager.isMuted
+                                    ? Color(red: 0.3, green: 0.6, blue: 1.0) : .white.opacity(0.8))
                         }
+                        .animation(.easeOut(duration: 0.15), value: callManager.isSpeaking)
                     }
+                    .buttonStyle(.plain)
 
-                    // Speaker toggle
-                    Button(action: {
-                        callManager.toggleSpeaker()
-                    }) {
+                    // Speaker
+                    Button(action: { callManager.toggleSpeaker() }) {
                         ZStack {
                             Circle()
-                                .fill(Color.white.opacity(callManager.isSpeakerOn ? 0.3 : 0.15))
-                                .frame(width: 48, height: 48)
-
+                                .fill(.ultraThinMaterial.opacity(0.5))
+                                .frame(width: 46, height: 46)
                             Image(systemName: callManager.isSpeakerOn ? "speaker.wave.3.fill" : "speaker.wave.2.fill")
-                                .font(.system(size: 18))
-                                .foregroundColor(.white)
+                                .font(.system(size: 17))
+                                .foregroundStyle(.white.opacity(0.8))
                         }
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 4)
             }
 
-            // Text input (always visible)
+            // Text input
             HStack {
+                Image(systemName: "text.bubble")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.white.opacity(0.3))
                 TextField("Send a text", text: .constant(""))
                     .textFieldStyle(.plain)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .foregroundColor(.white)
+                    .font(.system(size: 15, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.6))
             }
-            .background(Color.white.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 11)
+            .background(.ultraThinMaterial.opacity(0.3))
+            .clipShape(RoundedRectangle(cornerRadius: 22))
         }
-        .padding(.bottom, 8)
     }
 }
 
