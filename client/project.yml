@@ -34,6 +34,7 @@ targets:
         GENERATE_INFOPLIST_FILE: true
         INFOPLIST_KEY_CFBundleDisplayName: Claire
         INFOPLIST_KEY_NSMicrophoneUsageDescription: "Claire needs access to your microphone for voice conversations."
+        CODE_SIGN_ENTITLEMENTS: Claire/Resources/Claire.entitlements
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"

@@ -56,14 +56,22 @@ class CallManager: ObservableObject {
             ["role": "prompt", "content": "You are Claire, a helpful voice agent."]
         ]
 
-        // Initialize Zipper SDK audio bridge
-        // TODO: Bundle AFE model files and pass correct paths
-        let modelPath = Bundle.main.resourcePath ?? ""
+        // Initialize Zipper SDK audio bridge with bundled AFE model files
+        let afeModel = Bundle.main.path(forResource: "afe_model_no_relu_v57", ofType: "smpl") ?? ""
+        let aecModel = Bundle.main.path(forResource: "jrev_model_v82_smpl", ofType: "zip") ?? ""
+        let vadModel = Bundle.main.path(forResource: "vad_model_v57", ofType: "smpl") ?? ""
+        let afeConfig = Bundle.main.path(forResource: "afe_params_v57", ofType: "json") ?? ""
+
+        print("[Call] AFE model: \(afeModel)")
+        print("[Call] AEC model: \(aecModel)")
+        print("[Call] VAD model: \(vadModel)")
+        print("[Call] Config: \(afeConfig)")
+
         audioBridge = ClaireAudioBridge(
-            afeModelPath: modelPath,
-            aecModelPath: modelPath,
-            vadModelPath: modelPath,
-            afeConfigPath: modelPath
+            afeModelPath: afeModel,
+            aecModelPath: aecModel,
+            vadModelPath: vadModel,
+            afeConfigPath: afeConfig
         )
         audioBridge?.delegate = audioBridgeDelegate
 
