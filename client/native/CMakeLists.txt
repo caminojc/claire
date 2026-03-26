@@ -44,7 +44,7 @@ add_subdirectory(${OPUS_OGG_DIR} ./opus_ogg-bin EXCLUDE_FROM_ALL)
 
 # AFE (Audio Front End — echo cancellation, noise suppression)
 set(AFE_DIR ${ATRIA_SUBMODULES_DIR}/AEC/c/SmplAfe/SmplAFELib)
-include_directories(${AFE_DIR} ${AFE_DIR}/../../third_party/)
+include_directories(${AFE_DIR} ${AFE_DIR}/include ${AFE_DIR}/../../third_party/)
 add_subdirectory(${AFE_DIR} ./afe-bin EXCLUDE_FROM_ALL)
 target_compile_options(SmplAFELib PRIVATE "-w")
 
@@ -99,6 +99,14 @@ include_directories(${ATRIA_EMBEDDED_DIR})
 include_directories(${ATRIA_EMBEDDED_DIR}/utils)
 include_directories(${ATRIA_EMBEDDED_DIR}/zipperSdk)
 include_directories(${ATRIA_EMBEDDED_DIR}/ios)
+
+# Generated build info header (replaces Atria's python-generated one)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
+# Force iOS/Catalyst path for macOS build (skip desktop PortAudio adapter)
+# This makes SmplZipperClientImpl.h use SmplCoreAudioEngineAdapter instead of DesktopEngine
+add_compile_definitions(CLAIRE_BUILD=1)
+add_compile_definitions(TARGET_OS_MACCATALYST=1)
 
 # Force Zipper SDK API to compile as ObjC++ on iOS (it includes ObjC headers)
 set_source_files_properties(
