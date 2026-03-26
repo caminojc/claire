@@ -75,67 +75,116 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                     is Frame.Text -> {
                         val text = frame.readText()
                         try {
-                            val request = json.decodeFromString(UnifiedRequest.serializer(), text)
-                            when (request) {
-                                is UnifiedRequest.Config -> {
-                                    enabledLlm = request.enableLlm
-                                    enabledTts = request.enableTts
-                                    codecUpstream = request.codecUpstream
-                                    ttsProtobufVersion = request.ttsProtobufVersion
-                                    payloadProtobufVersion = request.payloadProtobufVersion
-                                    llmPrompt = request.llmPrompt
+                            // First try to parse as raw JSON (Claire client sends base64 payload)
+                            val jsonElement = json.parseToJsonElement(text).jsonObject
+                            val type = jsonElement["type"]?.jsonPrimitive?.content
 
-                                    if (request.respondBack) {
-                                        val configResponse = json.encodeToString(
-                                            UnifiedResponse.serializer(),
-                                            UnifiedResponse.Config(
-                                                uuid = request.uuid,
-                                                format = request.ttsPrefs.format,
-                                            )
-                                        )
-                                        outputChannel.send(Frame.Text(configResponse))
-                                    }
-                                    SLog.i("Session configured: codec=$codecUpstream, llm=$enabledLlm, tts=$enabledTts")
-                                }
+                            if (type == "payload_request") {
+                                // Claire client sends payload as base64 string — handle manually
+                                val uuid = jsonElement["uuid"]?.jsonPrimitive?.content ?: ""
+                                val payloadB64 = jsonElement["payload"]?.jsonPrimitive?.content ?: ""
+                                val audioPayload = java.util.Base64.getDecoder().decode(payloadB64)
+                                val timeMs = jsonElement["time_ms"]?.jsonPrimitive?.int ?: 0
 
-                                is UnifiedRequest.Payload -> {
-                                    latestPayloadUuid.set(request.uuid)
-                                    launch(backgroundDispatcher) {
-                                        handlePayload(
-                                            uuid = request.uuid,
-                                            messages = request.chatCompletionRequest.messages.map {
-                                                Message(
-                                                    role = it.role,
-                                                    content = (it.content as? TextContent)?.content ?: ""
-                                                )
-                                            },
-                                            audioPayload = request.payload,
-                                            deviceStartTime = request.timeMs,
-                                            clientTimingId = request.clientTimingId ?: "",
-                                            enabledLlm = enabledLlm,
-                                            enabledTts = enabledTts,
-                                            ttsProtobufVersion = ttsProtobufVersion,
-                                            llmPrompt = llmPrompt,
-                                            latestPayloadUuid = latestPayloadUuid,
-                                            outputChannel = outputChannel,
-                                        )
-                                    }
-                                }
-
-                                is UnifiedRequest.Echo -> {
-                                    val echoResponse = json.encodeToString(
-                                        UnifiedResponse.serializer(),
-                                        UnifiedResponse.Echo(uuid = request.uuid, content = request.content)
+                                // Extract messages from chat_completion_request
+                                val messagesJson = jsonElement["chat_completion_request"]
+                                    ?.jsonObject?.get("messages")?.jsonArray ?: JsonArray(emptyList())
+                                val messages = messagesJson.map { msgEl ->
+                                    val msgObj = msgEl.jsonObject
+                                    val role = msgObj["role"]?.jsonPrimitive?.content ?: "user"
+                                    val content = msgObj["content"]?.jsonPrimitive?.content ?: ""
+                                    Message(
+                                        role = when (role) {
+                                            "system" -> OpenAiRole.SYSTEM
+                                            "assistant" -> OpenAiRole.ASSISTANT
+                                            "prompt" -> OpenAiRole.PROMPT
+                                            else -> OpenAiRole.USER
+                                        },
+                                        content = content
                                     )
-                                    outputChannel.send(Frame.Text(echoResponse))
                                 }
 
-                                is UnifiedRequest.ChatCompletion -> {
-                                    // Direct chat completion without audio — not needed for v1
+                                SLog.i("Payload received: ${audioPayload.size} bytes, ${messages.size} messages")
+                                latestPayloadUuid.set(uuid)
+                                launch(backgroundDispatcher) {
+                                    handlePayload(
+                                        uuid = uuid,
+                                        messages = messages,
+                                        audioPayload = audioPayload,
+                                        deviceStartTime = timeMs,
+                                        clientTimingId = "",
+                                        enabledLlm = enabledLlm,
+                                        enabledTts = enabledTts,
+                                        ttsProtobufVersion = ttsProtobufVersion,
+                                        llmPrompt = llmPrompt,
+                                        latestPayloadUuid = latestPayloadUuid,
+                                        outputChannel = outputChannel,
+                                    )
+                                }
+                            } else {
+                                // Standard deserialization for config/echo/etc
+                                val request = json.decodeFromString(UnifiedRequest.serializer(), text)
+                                when (request) {
+                                    is UnifiedRequest.Config -> {
+                                        enabledLlm = request.enableLlm
+                                        enabledTts = request.enableTts
+                                        codecUpstream = request.codecUpstream
+                                        ttsProtobufVersion = request.ttsProtobufVersion
+                                        payloadProtobufVersion = request.payloadProtobufVersion
+                                        llmPrompt = request.llmPrompt
+
+                                        if (request.respondBack) {
+                                            val configResponse = json.encodeToString(
+                                                UnifiedResponse.serializer(),
+                                                UnifiedResponse.Config(
+                                                    uuid = request.uuid,
+                                                    format = request.ttsPrefs.format,
+                                                )
+                                            )
+                                            outputChannel.send(Frame.Text(configResponse))
+                                        }
+                                        SLog.i("Session configured: codec=$codecUpstream, llm=$enabledLlm, tts=$enabledTts")
+                                    }
+
+                                    is UnifiedRequest.Payload -> {
+                                        latestPayloadUuid.set(request.uuid)
+                                        launch(backgroundDispatcher) {
+                                            handlePayload(
+                                                uuid = request.uuid,
+                                                messages = request.chatCompletionRequest.messages.map {
+                                                    Message(
+                                                        role = it.role,
+                                                        content = (it.content as? TextContent)?.content ?: ""
+                                                    )
+                                                },
+                                                audioPayload = request.payload,
+                                                deviceStartTime = request.timeMs,
+                                                clientTimingId = request.clientTimingId ?: "",
+                                                enabledLlm = enabledLlm,
+                                                enabledTts = enabledTts,
+                                                ttsProtobufVersion = ttsProtobufVersion,
+                                                llmPrompt = llmPrompt,
+                                                latestPayloadUuid = latestPayloadUuid,
+                                                outputChannel = outputChannel,
+                                            )
+                                        }
+                                    }
+
+                                    is UnifiedRequest.Echo -> {
+                                        val echoResponse = json.encodeToString(
+                                            UnifiedResponse.serializer(),
+                                            UnifiedResponse.Echo(uuid = request.uuid, content = request.content)
+                                        )
+                                        outputChannel.send(Frame.Text(echoResponse))
+                                    }
+
+                                    is UnifiedRequest.ChatCompletion -> {
+                                        // Direct chat completion without audio — not needed for v1
+                                    }
                                 }
                             }
                         } catch (e: Exception) {
-                            SLog.e("Error processing text frame: ${e.message}")
+                            SLog.e("Error processing text frame: ${e.message}\nJSON input: ${text.take(200)}")
                         }
                     }
 
