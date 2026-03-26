@@ -57,7 +57,11 @@ include_directories(${COMPRESSOR_DIR})
 set(PFFFT_DIR ${ATRIA_SUBMODULES_DIR}/pffft)
 include_directories(${PFFFT_DIR})
 
-# ---- Source files ----
+# PortAudio (macOS desktop audio I/O)
+set(PORTAUDIO_DIR ${ATRIA_SUBMODULES_DIR}/portaudio)
+include_directories(${PORTAUDIO_DIR}/include)
+
+# ---- Common source files ----
 
 set(CLAIRE_NATIVE_SOURCES
     # Core audio processing
@@ -84,40 +88,47 @@ set(CLAIRE_NATIVE_SOURCES
     ${ATRIA_EMBEDDED_DIR}/speex/resample.c
     ${PFFFT_DIR}/pffft.c
 
-    # Oboe FIFO (needed for iOS too)
+    # Oboe FIFO buffers
     ${OBOE_DIR}/src/fifo/FifoBuffer.cpp
     ${OBOE_DIR}/src/fifo/FifoController.cpp
     ${OBOE_DIR}/src/fifo/FifoControllerBase.cpp
     ${OBOE_DIR}/src/fifo/FifoControllerIndirect.cpp
-
-    # iOS CoreAudio engine
-    ${ATRIA_EMBEDDED_DIR}/ios/SmplCoreAudioEngine.mm
 )
 
-# Include embedded directory for headers
+# ---- Platform-specific sources ----
+
+if (CMAKE_SYSTEM_NAME MATCHES "iOS")
+    # iOS: use SmplCoreAudioEngine (RemoteIO/VPIO)
+    list(APPEND CLAIRE_NATIVE_SOURCES
+        ${ATRIA_EMBEDDED_DIR}/ios/SmplCoreAudioEngine.mm
+    )
+    # ZipperClientApi includes ObjC headers via CoreAudioEngineAdapter
+    set_source_files_properties(
+        ${ATRIA_EMBEDDED_DIR}/zipperSdk/SmplZipperClientApi.cpp
+        PROPERTIES LANGUAGE OBJCXX
+    )
+elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    # macOS: use SmplDesktopEngine (PortAudio)
+    add_subdirectory(${PORTAUDIO_DIR} ./portaudio-bin EXCLUDE_FROM_ALL)
+    list(APPEND CLAIRE_NATIVE_SOURCES
+        ${ATRIA_EMBEDDED_DIR}/desktop/SmplDesktopEngine.cpp
+    )
+endif()
+
+# Include directories
 include_directories(${ATRIA_EMBEDDED_DIR})
 include_directories(${ATRIA_EMBEDDED_DIR}/utils)
 include_directories(${ATRIA_EMBEDDED_DIR}/zipperSdk)
 include_directories(${ATRIA_EMBEDDED_DIR}/ios)
+include_directories(${ATRIA_EMBEDDED_DIR}/desktop)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})  # SmplBuildInfo.h
 
-# Generated build info header (replaces Atria's python-generated one)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
-# Force iOS/Catalyst path for macOS build (skip desktop PortAudio adapter)
-# This makes SmplZipperClientImpl.h use SmplCoreAudioEngineAdapter instead of DesktopEngine
 add_compile_definitions(CLAIRE_BUILD=1)
-add_compile_definitions(TARGET_OS_MACCATALYST=1)
-
-# Force Zipper SDK API to compile as ObjC++ on iOS (it includes ObjC headers)
-set_source_files_properties(
-    ${ATRIA_EMBEDDED_DIR}/zipperSdk/SmplZipperClientApi.cpp
-    PROPERTIES LANGUAGE OBJCXX
-)
 
 # Build as static library
 add_library(claire_native STATIC ${CLAIRE_NATIVE_SOURCES})
 
-# Use Zipper SDK API mode (cleaner interface)
+# Use Zipper SDK API mode
 target_compile_definitions(claire_native PRIVATE SMPL_ZIPPER_SDK_BUILD=1)
 
 # Link submodule libraries
@@ -129,5 +140,8 @@ target_link_libraries(claire_native PRIVATE
     SmplCompressor
 )
 
-# Suppress warnings from third-party code
+if (CMAKE_SYSTEM_NAME MATCHES "Darwin" AND NOT CMAKE_SYSTEM_NAME MATCHES "iOS")
+    target_link_libraries(claire_native PRIVATE portaudio)
+endif()
+
 target_compile_options(claire_native PRIVATE "-w")

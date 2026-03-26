@@ -9,8 +9,7 @@ enum CallState {
 }
 
 /// Manages Claire voice call lifecycle.
-/// macOS: uses Swift AVAudioEngine for capture + simple VAD, sends PCM to server
-/// iOS: will use Zipper SDK (SmplCoreAudioEngine) once deployed on device
+/// Uses AVAudioEngine + SMPL AFE for audio, WebSocket for server communication.
 @MainActor
 class CallManager: ObservableObject {
     @Published var state: CallState = .idle
@@ -39,8 +38,6 @@ class CallManager: ObservableObject {
     init() {
         webSocketClient.delegate = self
     }
-
-    // MARK: - Call Lifecycle
 
     func startCall() {
         state = .connecting
@@ -77,14 +74,14 @@ class CallManager: ObservableObject {
         audioManager.setSpeakerEnabled(isSpeakerOn)
     }
 
-    // MARK: - Timer
-
     private func startTimer() {
         callStartTime = Date()
-        callTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+        callTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self = self, let start = self.callStartTime else { return }
                 self.callDuration = Date().timeIntervalSince(start)
+                self.userLevel = self.audioManager.userSpeechLevel
+                self.streamingLevel = self.audioManager.playoutLevel
             }
         }
     }
@@ -102,19 +99,17 @@ extension CallManager: ClaireWebSocketDelegate {
     nonisolated func didConnect() {
         Task { @MainActor in
             state = .connected
-            statusMessage = "Connected"
             startTimer()
 
-            // Send config — PCM16 since we're using Swift capture (not mel codec)
+            // PCM16 since we're using AVAudioEngine capture (not mel codec)
             webSocketClient.sendConfig(uuid: sessionUuid, codecUpstream: "pcm16_16kHz")
 
-            // Wire audio: speech segments sent to server
             audioManager.onSpeechSegment = { [weak self] segment in
                 Task { @MainActor in
                     guard let self = self else { return }
                     let uuid = UUID().uuidString
                     self.currentLlmResponse = ""
-                    print("[Call] Sending speech: \(segment.count) bytes (\(String(format: "%.1f", Double(segment.count) / 32000.0))s)")
+                    print("[Call] Sending \(segment.count) bytes (\(String(format: "%.1f", Double(segment.count) / 32000.0))s)")
                     self.webSocketClient.sendAudio(uuid: uuid, audioData: segment, messages: self.conversationHistory)
                 }
             }
@@ -124,7 +119,6 @@ extension CallManager: ClaireWebSocketDelegate {
                     self?.isSpeaking = speaking
                     if speaking {
                         self?.statusMessage = "Listening..."
-                        // Barge-in: stop TTS playback
                         self?.audioManager.interruptPlayback()
                     }
                 }
@@ -159,7 +153,6 @@ extension CallManager: ClaireWebSocketDelegate {
                     conversationHistory.append(["role": "user", "content": sttText])
                     currentLlmResponse = ""
                 }
-
             case "llm_completion_result_response":
                 if let chunk = json["llm_completion_result"] as? [String: Any],
                    let choices = chunk["choices"] as? [[String: Any]],
@@ -172,36 +165,29 @@ extension CallManager: ClaireWebSocketDelegate {
                 if let chunk = json["llm_completion_result"] as? [String: Any],
                    let choices = chunk["choices"] as? [[String: Any]],
                    let finishReason = choices.first?["finish_reason"] as? String,
-                   finishReason == "stop" {
-                    if !currentLlmResponse.isEmpty {
-                        conversationHistory.append(["role": "assistant", "content": currentLlmResponse])
-                    }
+                   finishReason == "stop",
+                   !currentLlmResponse.isEmpty {
+                    conversationHistory.append(["role": "assistant", "content": currentLlmResponse])
                 }
-
             case "tts_audio_result_response":
                 if let ttsResult = json["tts_audio_result"] as? [String: Any],
                    let audioB64 = ttsResult["byteArray"] as? String,
                    let audioData = Data(base64Encoded: audioB64) {
                     audioManager.playAudio(pcmData: audioData)
                 }
-
             case "config_response":
-                print("[Call] Config acknowledged by server")
-
+                print("[Call] Config acknowledged")
             case "error_response":
                 let msg = json["message"] as? String ?? "Unknown error"
                 statusMessage = "Error: \(msg)"
-                print("[Call] Server error: \(msg)")
-
             default:
-                print("[Call] Unknown response type: \(type)")
+                break
             }
         }
     }
 
     nonisolated func didReceiveBinary(_ data: Data) {
         Task { @MainActor in
-            // Binary TTS audio
             audioManager.playAudio(pcmData: data)
         }
     }

@@ -1,0 +1,4 @@
+module SMPLAudioProcessing {
+    umbrella header "SMPLAFEProcessor.h"
+    export *
+}
