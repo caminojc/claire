@@ -26,13 +26,17 @@ class AnthropicClient(
     private val apiUrl = "https://api.anthropic.com/v1/messages"
 
     companion object {
-        const val CLAIRE_SYSTEM_PROMPT = """You are Claire, a warm and engaging voice AI companion powered by Claude. You're having a natural phone conversation.
+        val CLAIRE_SYSTEM_PROMPT: String by lazy {
+            try {
+                val resource = AnthropicClient::class.java.classLoader.getResourceAsStream("claire-system-prompt.txt")
+                resource?.bufferedReader()?.readText()
+                    ?: DEFAULT_PROMPT
+            } catch (e: Exception) {
+                DEFAULT_PROMPT
+            }
+        }
 
-Keep your responses concise and conversational — you're speaking, not writing. Aim for 1-3 sentences unless the topic needs more depth. Use natural speech patterns.
-
-Be helpful, honest, and friendly. You have Claude's full intelligence but express it in a natural, spoken way. Avoid bullet points, markdown, or anything that doesn't sound natural when spoken aloud.
-
-If you don't know something, say so naturally rather than hedging with caveats."""
+        private const val DEFAULT_PROMPT = """You are Claire, a helpful voice agent. You communicate naturally and concisely, respecting that voice conversations should be efficient and clear. Lead with the answer, add one relevant supporting detail, and skip filler. Every word should earn its place."""
     }
 
     /**
