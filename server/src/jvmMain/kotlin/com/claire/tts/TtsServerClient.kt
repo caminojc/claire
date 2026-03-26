@@ -39,7 +39,9 @@ class TtsServerClient(
         speed: Float = 1.0f,
     ) {
         try {
-            httpClient.webSocket("$ttsServerUrl/ws") {
+            SLog.i("TTS client: connecting to $ttsServerUrl/ws for '${text.take(30)}'")
+            httpClient.webSocket(host = "localhost", port = 1238, path = "/ws") {
+                SLog.i("TTS client: connected, sending config+text")
                 // Send config
                 val config = buildJsonObject {
                     put("model", "kokoro")
@@ -66,37 +68,49 @@ class TtsServerClient(
                 send(Frame.Text(endMessage.toString()))
 
                 // Receive audio chunks
+                SLog.i("TTS client: waiting for audio chunks...")
                 for (frame in incoming) {
                     when (frame) {
                         is Frame.Text -> {
-                            val response = Json.parseToJsonElement(frame.readText()).jsonObject
+                            val frameText = frame.readText()
+                            val response = Json.parseToJsonElement(frameText).jsonObject
                             val type = response["type"]?.jsonPrimitive?.content
 
                             when (type) {
                                 "audio" -> {
                                     val audioBase64 = response["audio_base64"]?.jsonPrimitive?.content ?: continue
                                     val audioBytes = java.util.Base64.getDecoder().decode(audioBase64)
-                                    val isFinal = response["is_final"]?.jsonPrimitive?.boolean ?: false
-                                    val segment = response["text_segment"]?.jsonPrimitive?.content ?: ""
+                                    SLog.i("TTS client: got audio chunk ${audioBytes.size} bytes")
 
                                     outputChannel.send(TtsAudioChunk(
                                         audio = audioBytes,
-                                        isEnd = isFinal,
-                                        textSegment = segment,
+                                        isEnd = false,
+                                        textSegment = response["text_segment"]?.jsonPrimitive?.content ?: "",
                                     ))
                                 }
                                 "done" -> {
+                                    SLog.i("TTS client: done")
                                     outputChannel.send(TtsAudioChunk(
                                         audio = ByteArray(0),
                                         isEnd = true,
                                     ))
                                     break
                                 }
+                                "error" -> {
+                                    SLog.e("TTS server error: ${response["message"]?.jsonPrimitive?.content}")
+                                    break
+                                }
+                                else -> {
+                                    SLog.i("TTS client: unknown type '$type'")
+                                }
                             }
                         }
-                        else -> {}
+                        else -> {
+                            SLog.i("TTS client: non-text frame: ${frame.frameType}")
+                        }
                     }
                 }
+                SLog.i("TTS client: stream ended")
             }
         } catch (e: Exception) {
             SLog.e("TTS streaming error: ${e.message}")
