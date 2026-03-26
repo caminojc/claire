@@ -259,10 +259,21 @@ struct BottomBar: View {
                 Image(systemName: "text.bubble")
                     .font(.system(size: 14))
                     .foregroundStyle(.white.opacity(0.3))
-                TextField("Send a text", text: .constant(""))
+                TextField("Send a text", text: $callManager.textInput)
                     .textFieldStyle(.plain)
                     .font(.system(size: 15, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(.white.opacity(0.8))
+                    .onSubmit {
+                        callManager.sendText()
+                    }
+                if !callManager.textInput.isEmpty {
+                    Button(action: { callManager.sendText() }) {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 22))
+                            .foregroundStyle(Color(red: 0.16, green: 0.38, blue: 1.0))
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 11)

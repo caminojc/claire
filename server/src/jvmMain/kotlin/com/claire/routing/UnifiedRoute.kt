@@ -243,26 +243,37 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
         fun isStale() = latestPayloadUuid.get() != uuid
 
         try {
-            // === Phase 1: STT ===
-            val sttText = sttServerClient.transcribe(audioPayload)
-            if (sttText.isBlank() || isStale()) return
+            val updatedMessages: List<Message>
 
-            // Send STT result to client
-            val sttResponse = json.encodeToString(
-                UnifiedResponse.serializer(),
-                UnifiedResponse.SttTextResult(
-                    uuid = uuid,
-                    text = sttText,
-                    deviceStartTime = deviceStartTime,
-                    clientTimingId = clientTimingId,
+            if (audioPayload.isEmpty()) {
+                // Text-only request — skip STT, use messages directly
+                SLog.i("Text-only payload, skipping STT. Messages: ${messages.size}")
+                updatedMessages = messages
+                if (!enabledLlm) return
+            } else {
+                // === Phase 1: STT ===
+                SLog.i("Transcribing ${audioPayload.size} bytes of audio...")
+                val sttText = sttServerClient.transcribe(audioPayload)
+                SLog.i("STT result: '$sttText'")
+                if (sttText.isBlank() || isStale()) return
+
+                // Send STT result to client
+                val sttResponse = json.encodeToString(
+                    UnifiedResponse.serializer(),
+                    UnifiedResponse.SttTextResult(
+                        uuid = uuid,
+                        text = sttText,
+                        deviceStartTime = deviceStartTime,
+                        clientTimingId = clientTimingId,
+                    )
                 )
-            )
-            outputChannel.send(Frame.Text(sttResponse))
+                outputChannel.send(Frame.Text(sttResponse))
 
-            if (!enabledLlm) return
+                if (!enabledLlm) return
+                updatedMessages = messages + Message(role = OpenAiRole.USER, content = sttText)
+            }
 
             // === Phase 2: LLM (Claude) + TTS in parallel ===
-            val updatedMessages = messages + Message(role = OpenAiRole.USER, content = sttText)
             val ttsTextChannel = Channel<String>(capacity = 20)
             val completionId = "claire-${System.currentTimeMillis()}"
 

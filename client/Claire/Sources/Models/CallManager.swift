@@ -20,6 +20,7 @@ class CallManager: ObservableObject {
     @Published var isSpeaking = false
     @Published var userLevel: Float = 0
     @Published var streamingLevel: Float = 0
+    @Published var textInput: String = ""
 
     private var callTimer: Timer?
     private var callStartTime: Date?
@@ -64,6 +65,21 @@ class CallManager: ObservableObject {
         currentLlmResponse = ""
     }
 
+    func sendText() {
+        let text = textInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        textInput = ""
+
+        conversationHistory.append(["role": "user", "content": text])
+        statusMessage = "You: \(text)"
+        currentLlmResponse = ""
+
+        // Send as a text-only payload (empty audio, just messages)
+        let uuid = UUID().uuidString
+        webSocketClient.sendAudio(uuid: uuid, audioData: Data(), messages: conversationHistory)
+        print("[Call] Sent text: \(text)")
+    }
+
     func toggleMute() {
         isMuted.toggle()
         audioManager.setMuted(isMuted)
@@ -102,6 +118,11 @@ extension CallManager: ClaireWebSocketDelegate {
             startTimer()
 
             webSocketClient.sendConfig(uuid: sessionUuid, codecUpstream: "pcm16_16kHz")
+
+            // Play startup chime to initialize audio
+            if let chimePath = Bundle.main.path(forResource: "hello_claire", ofType: "mp3") {
+                audioManager.playFile(URL(fileURLWithPath: chimePath))
+            }
 
             audioManager.onStatusMessage = { [weak self] msg in
                 Task { @MainActor in self?.statusMessage = msg }

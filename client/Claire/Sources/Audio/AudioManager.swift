@@ -222,6 +222,20 @@ class AudioManager {
         captureConverter = nil
     }
 
+    // MARK: - File Playback
+
+    private var filePlayer: AVAudioPlayer?
+
+    func playFile(_ url: URL) {
+        do {
+            filePlayer = try AVAudioPlayer(contentsOf: url)
+            filePlayer?.play()
+            print("[Audio] Playing file: \(url.lastPathComponent)")
+        } catch {
+            print("[Audio] playFile failed: \(error)")
+        }
+    }
+
     // MARK: - Playback
 
     func playAudio(pcmData: Data, sampleRate: Double = 24000) {
