@@ -194,11 +194,15 @@ extension CallManager: ClaireWebSocketDelegate {
                     conversationHistory.append(["role": "assistant", "content": currentLlmResponse])
                 }
             case "tts_audio_result_response":
-                // New simple format: audio_base64 at top level
-                if let audioB64 = json["audio_base64"] as? String,
-                   let audioData = Data(base64Encoded: audioB64) {
-                    print("[Call] TTS audio: \(audioData.count) bytes")
-                    audioManager.playAudio(pcmData: audioData)
+                if let audioB64 = json["audio_base64"] as? String {
+                    // Decode and play on background thread to avoid blocking
+                    let mgr = audioManager
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        if let audioData = Data(base64Encoded: audioB64) {
+                            print("[Call] TTS audio: \(audioData.count) bytes, playing...")
+                            mgr.playAudio(pcmData: audioData)
+                        }
+                    }
                 }
             case "config_response":
                 print("[Call] Config acknowledged")
