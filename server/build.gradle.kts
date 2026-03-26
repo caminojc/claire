@@ -1,11 +1,10 @@
 import java.io.ByteArrayOutputStream
 
 val ktor_version: String by project
-val kotlin_version: String by project
 val logback_version: String by project
 
 plugins {
-    alias(libs.plugins.multiplatform)
+    alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.ktor)
     alias(libs.plugins.shadow.jar)
@@ -18,52 +17,33 @@ application {
     mainClass.set("com.claire.ApplicationKt")
 }
 
-kotlin {
-    jvm {
-        withJava()
-    }
+dependencies {
+    implementation(project(":submodules:atria-kotlin"))
 
-    sourceSets {
-        all {
-            languageSettings.optIn("kotlin.time.ExperimentalTime")
-            languageSettings.optIn("kotlinx.coroutines.ExperimentalCoroutinesApi")
-            languageSettings.optIn("kotlin.ExperimentalStdlibApi")
-        }
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.kotlinx.serialization.protobuf)
 
-        val jvmMain by getting {
-            dependencies {
-                kotlin.srcDirs("src/main/kotlin")
-                resources.srcDirs("src/main/resources")
+    // ktor server
+    implementation("io.ktor:ktor-server-netty-jvm:$ktor_version")
+    implementation("io.ktor:ktor-server-core-jvm:$ktor_version")
+    implementation("io.ktor:ktor-server-auth:$ktor_version")
+    implementation("io.ktor:ktor-server-websockets:$ktor_version")
+    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:$ktor_version")
+    implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktor_version")
 
-                implementation(project(":submodules:atria-kotlin"))
+    // ktor client
+    implementation("io.ktor:ktor-client-core:$ktor_version")
+    implementation("io.ktor:ktor-client-logging:$ktor_version")
+    implementation("io.ktor:ktor-client-auth:$ktor_version")
+    implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
+    implementation("io.ktor:ktor-client-okhttp-jvm:$ktor_version")
+    implementation("io.ktor:ktor-client-websockets:$ktor_version")
 
-                implementation(libs.kotlinx.serialization.json)
-                implementation(libs.kotlinx.serialization.protobuf)
+    // koin
+    implementation(libs.koin.core)
 
-                // ktor server
-                implementation("io.ktor:ktor-server-netty-jvm:$ktor_version")
-                implementation("io.ktor:ktor-server-core-jvm:$ktor_version")
-                implementation("io.ktor:ktor-server-auth:$ktor_version")
-                implementation("io.ktor:ktor-server-websockets:$ktor_version")
-                implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:$ktor_version")
-                implementation("io.ktor:ktor-server-content-negotiation-jvm:$ktor_version")
-
-                // ktor client
-                implementation("io.ktor:ktor-client-core:$ktor_version")
-                implementation("io.ktor:ktor-client-logging:$ktor_version")
-                implementation("io.ktor:ktor-client-auth:$ktor_version")
-                implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
-                implementation("io.ktor:ktor-client-okhttp-jvm:$ktor_version")
-                implementation("io.ktor:ktor-client-websockets:$ktor_version")
-
-                // koin
-                implementation(libs.koin.core)
-
-                // logback
-                implementation("ch.qos.logback:logback-classic:$logback_version")
-            }
-        }
-    }
+    // logback
+    implementation("ch.qos.logback:logback-classic:$logback_version")
 }
 
 tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
