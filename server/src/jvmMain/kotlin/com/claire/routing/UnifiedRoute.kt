@@ -84,7 +84,7 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                                 val uuid = jsonElement["uuid"]?.jsonPrimitive?.content ?: ""
                                 val payloadB64 = jsonElement["payload"]?.jsonPrimitive?.content ?: ""
                                 val audioPayload = java.util.Base64.getDecoder().decode(payloadB64)
-                                val timeMs = jsonElement["time_ms"]?.jsonPrimitive?.int ?: 0
+                                val timeMs = (jsonElement["time_ms"]?.jsonPrimitive?.long?.rem(Int.MAX_VALUE))?.toInt() ?: 0
 
                                 // Extract messages from chat_completion_request
                                 val messagesJson = jsonElement["chat_completion_request"]
