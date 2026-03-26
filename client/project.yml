@@ -18,6 +18,11 @@ targets:
     platform: [iOS, macOS]
     sources:
       - path: Claire/Sources
+        excludes:
+          - "**/*.mm"
+      - path: Claire/Sources/Native/ClaireAudioBridge.mm
+        buildPhase: sources
+        compilerFlags: ["-x", "objective-c++", "-std=c++17"]
     resources:
       - path: Claire/Resources
     settings:
@@ -32,6 +37,13 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        # C++ / ObjC++ bridging
+        SWIFT_OBJC_BRIDGING_HEADER: Claire/Sources/Native/Claire-Bridging-Header.h
+        CLANG_CXX_LANGUAGE_STANDARD: c++17
+        # Static library search paths
+        LIBRARY_SEARCH_PATHS: "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64"
+        HEADER_SEARCH_PATHS: "$(inherited) $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios $(PROJECT_DIR)/native"
+        OTHER_LDFLAGS: "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate"
       configs:
         Debug:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG

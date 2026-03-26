@@ -1,24 +1,15 @@
 #import "ClaireAudioBridge.h"
+#import <Foundation/Foundation.h>
 
 // Zipper SDK C++ API
 #include "SmplZipperClientApi.h"
 
-// Forward declare the C++ listener bridge
-class ClaireZipperListener;
-
-@interface ClaireAudioBridge () {
-    SmplZipperClient *_zipperClient;
-    ClaireZipperListener *_listener;
-    BOOL _isRunning;
-}
-@end
-
-// C++ listener that forwards callbacks to the Objective-C delegate
+// C++ listener that forwards callbacks to Objective-C delegate
 class ClaireZipperListener : public ZipperClientListenerI {
 public:
     __weak id<ClaireAudioBridgeDelegate> delegate = nil;
 
-    void OnEncodedPayload(const uint8_t *data, int numBytes, int startTimeMs, int timeMs) override {
+    void OnEncodedPayload(const uint8_t data[], int numBytes, int32_t startTimeMs, int32_t timeMs) override {
         NSData *nsData = [NSData dataWithBytes:data length:numBytes];
         id<ClaireAudioBridgeDelegate> d = delegate;
         if (d) {
@@ -28,7 +19,7 @@ public:
         }
     }
 
-    void OnSegmentFinished(int timeMs) override {
+    void OnSegmentFinished(int32_t timeMs) override {
         id<ClaireAudioBridgeDelegate> d = delegate;
         if (d) {
             dispatch_async(dispatch_get_main_queue(), ^{
@@ -37,7 +28,7 @@ public:
         }
     }
 
-    void OnSegmentCancelled(int timeMs) override {
+    void OnSegmentCancelled(int32_t timeMs) override {
         id<ClaireAudioBridgeDelegate> d = delegate;
         if (d) {
             dispatch_async(dispatch_get_main_queue(), ^{
@@ -46,37 +37,45 @@ public:
         }
     }
 
-    void OnSegmentStarted(int timeMs) override {
+    void OnSegmentStarted(int32_t timeMs) override {
         // No-op for Claire
     }
 
     void OnUserSpeechChanged(bool active) override {
         id<ClaireAudioBridgeDelegate> d = delegate;
         if (d) {
+            BOOL isActive = active;
             dispatch_async(dispatch_get_main_queue(), ^{
-                [d onUserSpeechChanged:active];
+                [d onUserSpeechChanged:isActive];
             });
         }
     }
 
-    void OnStreamingStarted(int id) override {
+    void OnStreamingStarted(int32_t streamId) override {
         id<ClaireAudioBridgeDelegate> d = delegate;
         if (d) {
             dispatch_async(dispatch_get_main_queue(), ^{
-                [d onStreamingStarted:id];
+                [d onStreamingStarted:streamId];
             });
         }
     }
 
-    void OnStreamingStopped(int id, int timeMs) override {
+    void OnStreamingStopped(int32_t streamId, int32_t timeMs) override {
         id<ClaireAudioBridgeDelegate> d = delegate;
         if (d) {
             dispatch_async(dispatch_get_main_queue(), ^{
-                [d onStreamingStopped:id timeMs:timeMs];
+                [d onStreamingStopped:streamId timeMs:timeMs];
             });
         }
     }
 };
+
+@interface ClaireAudioBridge () {
+    SmplZipperClient *_zipperClient;
+    std::shared_ptr<ClaireZipperListener> _listener;
+    BOOL _isRunning;
+}
+@end
 
 @implementation ClaireAudioBridge
 
@@ -86,16 +85,14 @@ public:
                        afeConfigPath:(NSString *)afeConfigPath {
     self = [super init];
     if (self) {
-        _listener = new ClaireZipperListener();
+        _listener = std::make_shared<ClaireZipperListener>();
         _zipperClient = new SmplZipperClient();
         _isRunning = NO;
 
-        // Initialize with model paths
-        _zipperClient->Initialize(
-            [afeModelPath UTF8String],
-            _listener,
-            ENC_MelCodec  // Default encoder
-        );
+        // Initialize with model path and mel codec encoder
+        std::string modelPath = [afeModelPath UTF8String];
+        int result = _zipperClient->Initialize(modelPath, _listener, ENC_MelCodec);
+        NSLog(@"[ClaireAudio] Zipper SDK initialized: %d", result);
     }
     return self;
 }
@@ -107,10 +104,7 @@ public:
         delete _zipperClient;
         _zipperClient = nullptr;
     }
-    if (_listener) {
-        delete _listener;
-        _listener = nullptr;
-    }
+    _listener = nullptr;
 }
 
 - (void)setDelegate:(id<ClaireAudioBridgeDelegate>)delegate {
@@ -122,27 +116,42 @@ public:
 
 - (void)startWithEncoderType:(int)encoderType {
     if (_isRunning) return;
-    _zipperClient->Start();
-    _isRunning = YES;
+    int result = _zipperClient->Start();
+    _isRunning = (result == 0);
+    NSLog(@"[ClaireAudio] Zipper SDK started: %d", result);
 }
 
 - (void)stop {
     if (!_isRunning) return;
     _zipperClient->Stop();
     _isRunning = NO;
+    NSLog(@"[ClaireAudio] Zipper SDK stopped");
 }
 
 - (void)addStreamingData:(NSData *)data
                 streamId:(int)streamId
                   format:(NSString *)format
                    isEnd:(BOOL)isEnd {
-    if (!_zipperClient) return;
+    if (!_zipperClient || !_isRunning) return;
+
+    // Map format string to Decoder enum
+    enum Decoder dec = DEC_PCM16_24KHZ;
+    if ([format isEqualToString:@"pcm_24000"] || [format isEqualToString:@"pcm"]) {
+        dec = DEC_PCM16_24KHZ;
+    } else if ([format isEqualToString:@"pcm_16000"]) {
+        dec = DEC_PCM16_16KHZ;
+    } else if ([format containsString:@"opus"]) {
+        dec = DEC_OPUS;
+    } else if ([format containsString:@"mp3"]) {
+        dec = DEC_MP3;
+    }
+
     _zipperClient->addStreamingData(
         (const uint8_t *)[data bytes],
         (int)[data length],
-        streamId,
-        [format UTF8String],
-        isEnd
+        (int32_t)streamId,
+        dec,
+        (bool)isEnd
     );
 }
 
