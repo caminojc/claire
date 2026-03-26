@@ -194,9 +194,10 @@ extension CallManager: ClaireWebSocketDelegate {
                     conversationHistory.append(["role": "assistant", "content": currentLlmResponse])
                 }
             case "tts_audio_result_response":
-                if let ttsResult = json["tts_audio_result"] as? [String: Any],
-                   let audioB64 = ttsResult["byteArray"] as? String,
+                // New simple format: audio_base64 at top level
+                if let audioB64 = json["audio_base64"] as? String,
                    let audioData = Data(base64Encoded: audioB64) {
+                    print("[Call] TTS audio: \(audioData.count) bytes")
                     audioManager.playAudio(pcmData: audioData)
                 }
             case "config_response":
@@ -211,8 +212,7 @@ extension CallManager: ClaireWebSocketDelegate {
     }
 
     nonisolated func didReceiveBinary(_ data: Data) {
-        Task { @MainActor in
-            audioManager.playAudio(pcmData: data)
-        }
+        // Ignore binary frames for now (protobuf TTS — not used in this path)
+        print("[Call] Received binary frame: \(data.count) bytes (ignored)")
     }
 }

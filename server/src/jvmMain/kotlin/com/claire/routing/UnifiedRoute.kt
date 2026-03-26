@@ -347,21 +347,23 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                         // Forward audio chunks to client
                         for (audioChunk in audioChannel) {
                             if (isStale()) break
+                            if (audioChunk.audio.isEmpty()) continue
 
-                            if (ttsProtobufVersion == ProtobufTtsResponseVersion) {
-                                // Binary protobuf response
-                                val ttsMsg = TtsResponseMessage(
-                                    uuid = uuid,
-                                    audio = audioChunk.audio,
-                                    isEnd = audioChunk.isEnd,
-                                    llmCompletionId = completionId,
-                                    deviceStartTime = deviceStartTime,
-                                    clientTimingId = clientTimingId,
-                                    audioFormat = "pcm_24000",
-                                )
-                                outputChannel.send(Frame.Binary(true, ProtoBuf.encodeToByteArray(ttsMsg)))
-                            } else {
-                                // JSON response (fallback)
+                            SLog.i("Sending TTS audio to client: ${audioChunk.audio.size} bytes")
+
+                            // Send as simple JSON with base64 audio (efficient, easy to parse)
+                            val audioB64 = java.util.Base64.getEncoder().encodeToString(audioChunk.audio)
+                            val ttsJson = buildJsonObject {
+                                put("type", "tts_audio_result_response")
+                                put("uuid", uuid)
+                                put("audio_base64", audioB64)
+                                put("is_end", audioChunk.isEnd)
+                                put("format", "pcm_int16_24000")
+                            }
+                            outputChannel.send(Frame.Text(ttsJson.toString()))
+
+                            if (false) {
+                                // Original protobuf path (for future Atria client compat)
                                 val ttsResponse = json.encodeToString(
                                     UnifiedResponse.serializer(),
                                     UnifiedResponse.TtsAudioResult(

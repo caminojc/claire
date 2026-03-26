@@ -51,8 +51,8 @@ class ClaireWebSocketClient: NSObject {
                 "voiceId": "af_heart",
                 "ttsProvider": "kokoro",
             ],
-            "tts_protobuf_version": 2,
-            "payload_protobuf_version": 1,
+            "tts_protobuf_version": -1,
+            "payload_protobuf_version": -1,
             "respond_back": true,
         ] as [String: Any]
 
