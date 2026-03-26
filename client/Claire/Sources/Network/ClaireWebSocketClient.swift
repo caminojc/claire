@@ -47,7 +47,7 @@ class ClaireWebSocketClient: NSObject {
             "llm_name": "claude",
             "tts_prefs": [
                 "verNumber": 5,
-                "format": "pcm_24000",
+                "format": "PCM_24000",
                 "voiceId": "af_heart",
                 "ttsProvider": "kokoro",
             ],
