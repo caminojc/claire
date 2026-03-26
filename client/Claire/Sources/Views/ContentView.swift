@@ -131,7 +131,7 @@ struct BottomBar: View {
 
                     Spacer()
 
-                    // Mic toggle
+                    // Mic toggle (pulses when speaking)
                     Button(action: {
                         callManager.toggleMute()
                     }) {
@@ -140,9 +140,16 @@ struct BottomBar: View {
                                 .fill(Color.white.opacity(callManager.isMuted ? 0.3 : 0.15))
                                 .frame(width: 48, height: 48)
 
+                            // Speaking indicator ring
+                            if callManager.isSpeaking && !callManager.isMuted {
+                                Circle()
+                                    .stroke(Color.green, lineWidth: 2)
+                                    .frame(width: 52, height: 52)
+                            }
+
                             Image(systemName: callManager.isMuted ? "mic.slash.fill" : "mic.fill")
                                 .font(.system(size: 18))
-                                .foregroundColor(.white)
+                                .foregroundColor(callManager.isSpeaking ? .green : .white)
                         }
                     }
 
