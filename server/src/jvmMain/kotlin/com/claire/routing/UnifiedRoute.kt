@@ -327,15 +327,21 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                 val ttsJob = backgroundScope.launch {
                     for (textChunk in ttsTextChannel) {
                         if (isStale()) break
+                        SLog.i("TTS: requesting audio for '${textChunk.take(50)}'")
 
                         val audioChannel = Channel<TtsServerClient.TtsAudioChunk>(capacity = 50)
 
                         // Request TTS audio
                         launch {
-                            ttsServerClient.streamTts(
-                                text = textChunk,
-                                outputChannel = audioChannel,
-                            )
+                            try {
+                                ttsServerClient.streamTts(
+                                    text = textChunk,
+                                    outputChannel = audioChannel,
+                                )
+                            } catch (e: Exception) {
+                                SLog.e("TTS streaming error: ${e.message}")
+                                audioChannel.send(TtsServerClient.TtsAudioChunk(ByteArray(0), true))
+                            }
                         }
 
                         // Forward audio chunks to client
