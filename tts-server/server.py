@@ -9,7 +9,7 @@ import base64
 import json
 import logging
 import numpy as np
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import PlainTextResponse
 
 logger = logging.getLogger("claire-tts")
