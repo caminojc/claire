@@ -1,0 +1,336 @@
+package com.claire.routing
+
+import TtsChunkedTextFilter
+import TtsResponseMessage
+import ProtobufTtsResponseVersion
+import com.claire.backgroundDispatcher
+import com.claire.backgroundScope
+import com.claire.llm.AnthropicClient
+import com.claire.stt.SttServerClient
+import com.claire.tts.TtsServerClient
+import io.ktor.websocket.*
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.decodeFromByteArray
+import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.json.*
+import kotlinx.serialization.protobuf.ProtoBuf
+import logging.SLog
+import module.*
+import openai.*
+import schemas.*
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicReference
+
+typealias WebSocketHandler = suspend DefaultWebSocketServerSession.() -> Unit
+
+interface WebSocketRoute {
+    fun route(): WebSocketHandler
+}
+
+/**
+ * Claire's unified WebSocket endpoint.
+ * Handles the STT -> Claude -> TTS pipeline.
+ * Simplified from atria-server's UnifiedRoute (1196 lines -> ~200 lines).
+ */
+class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
+
+    private val anthropicClient: AnthropicClient = scope.get()
+    private val sttServerClient: SttServerClient = scope.get()
+    private val ttsServerClient: TtsServerClient = scope.get()
+    private val json: Json = scope.get()
+
+    private val singleDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+
+    @OptIn(ExperimentalSerializationApi::class)
+    override fun route(): WebSocketHandler = {
+        val session = this
+        var enabledLlm = true
+        var enabledTts = true
+        var codecUpstream = UpstreamCodecOption.PCM16_16KHZ.persistedValue
+        var ttsProtobufVersion = -1
+        var payloadProtobufVersion = -1
+        var llmPrompt: String? = null
+        val latestPayloadUuid = AtomicReference("")
+
+        val outputChannel = Channel<Frame>(capacity = 100)
+
+        // Single writer coroutine for ordered WebSocket output
+        val outputJob = launch(singleDispatcher) {
+            for (frame in outputChannel) {
+                try {
+                    session.send(frame)
+                } catch (e: Exception) {
+                    SLog.e("Error sending frame: ${e.message}")
+                    break
+                }
+            }
+        }
+
+        try {
+            for (frame in incoming) {
+                when (frame) {
+                    is Frame.Text -> {
+                        val text = frame.readText()
+                        try {
+                            val request = json.decodeFromString(UnifiedRequest.serializer(), text)
+                            when (request) {
+                                is UnifiedRequest.Config -> {
+                                    enabledLlm = request.enableLlm
+                                    enabledTts = request.enableTts
+                                    codecUpstream = request.codecUpstream
+                                    ttsProtobufVersion = request.ttsProtobufVersion
+                                    payloadProtobufVersion = request.payloadProtobufVersion
+                                    llmPrompt = request.llmPrompt
+
+                                    if (request.respondBack) {
+                                        val configResponse = json.encodeToString(
+                                            UnifiedResponse.serializer(),
+                                            UnifiedResponse.Config(
+                                                uuid = request.uuid,
+                                                format = request.ttsPrefs.format,
+                                            )
+                                        )
+                                        outputChannel.send(Frame.Text(configResponse))
+                                    }
+                                    SLog.i("Session configured: codec=$codecUpstream, llm=$enabledLlm, tts=$enabledTts")
+                                }
+
+                                is UnifiedRequest.Payload -> {
+                                    latestPayloadUuid.set(request.uuid)
+                                    launch(backgroundDispatcher) {
+                                        handlePayload(
+                                            uuid = request.uuid,
+                                            messages = request.chatCompletionRequest.messages.map {
+                                                Message(
+                                                    role = it.role,
+                                                    content = (it.content as? TextContent)?.content ?: ""
+                                                )
+                                            },
+                                            audioPayload = request.payload,
+                                            deviceStartTime = request.timeMs,
+                                            clientTimingId = request.clientTimingId ?: "",
+                                            enabledLlm = enabledLlm,
+                                            enabledTts = enabledTts,
+                                            ttsProtobufVersion = ttsProtobufVersion,
+                                            llmPrompt = llmPrompt,
+                                            latestPayloadUuid = latestPayloadUuid,
+                                            outputChannel = outputChannel,
+                                        )
+                                    }
+                                }
+
+                                is UnifiedRequest.Echo -> {
+                                    val echoResponse = json.encodeToString(
+                                        UnifiedResponse.serializer(),
+                                        UnifiedResponse.Echo(uuid = request.uuid, content = request.content)
+                                    )
+                                    outputChannel.send(Frame.Text(echoResponse))
+                                }
+
+                                is UnifiedRequest.ChatCompletion -> {
+                                    // Direct chat completion without audio — not needed for v1
+                                }
+                            }
+                        } catch (e: Exception) {
+                            SLog.e("Error processing text frame: ${e.message}")
+                        }
+                    }
+
+                    is Frame.Binary -> {
+                        // Handle protobuf PayloadRequestMessage
+                        try {
+                            val payloadMsg = ProtoBuf.decodeFromByteArray<PayloadRequestMessage>(frame.readBytes())
+                            latestPayloadUuid.set(payloadMsg.uuid)
+                            launch(backgroundDispatcher) {
+                                handlePayload(
+                                    uuid = payloadMsg.uuid,
+                                    messages = payloadMsg.messages,
+                                    audioPayload = payloadMsg.payload,
+                                    deviceStartTime = payloadMsg.deviceStartTime,
+                                    clientTimingId = payloadMsg.clientTimingId ?: "",
+                                    enabledLlm = enabledLlm,
+                                    enabledTts = enabledTts,
+                                    ttsProtobufVersion = ttsProtobufVersion,
+                                    llmPrompt = llmPrompt,
+                                    latestPayloadUuid = latestPayloadUuid,
+                                    outputChannel = outputChannel,
+                                )
+                            }
+                        } catch (e: Exception) {
+                            SLog.e("Error processing binary frame: ${e.message}")
+                        }
+                    }
+
+                    else -> {}
+                }
+            }
+        } finally {
+            outputChannel.close()
+            outputJob.cancel()
+        }
+    }
+
+    /**
+     * Core pipeline: STT -> LLM -> TTS
+     */
+    @OptIn(ExperimentalSerializationApi::class)
+    private suspend fun handlePayload(
+        uuid: String,
+        messages: List<Message>,
+        audioPayload: ByteArray,
+        deviceStartTime: Int,
+        clientTimingId: String,
+        enabledLlm: Boolean,
+        enabledTts: Boolean,
+        ttsProtobufVersion: Int,
+        llmPrompt: String?,
+        latestPayloadUuid: AtomicReference<String>,
+        outputChannel: Channel<Frame>,
+    ) {
+        // Check if this request is still the latest (barge-in support)
+        fun isStale() = latestPayloadUuid.get() != uuid
+
+        try {
+            // === Phase 1: STT ===
+            val sttText = sttServerClient.transcribe(audioPayload)
+            if (sttText.isBlank() || isStale()) return
+
+            // Send STT result to client
+            val sttResponse = json.encodeToString(
+                UnifiedResponse.serializer(),
+                UnifiedResponse.SttTextResult(
+                    uuid = uuid,
+                    text = sttText,
+                    deviceStartTime = deviceStartTime,
+                    clientTimingId = clientTimingId,
+                )
+            )
+            outputChannel.send(Frame.Text(sttResponse))
+
+            if (!enabledLlm) return
+
+            // === Phase 2: LLM (Claude) + TTS in parallel ===
+            val updatedMessages = messages + Message(role = OpenAiRole.USER, content = sttText)
+            val ttsTextChannel = Channel<String>(capacity = 20)
+            val completionId = "claire-${System.currentTimeMillis()}"
+
+            // LLM streaming task — feeds text into TTS channel
+            val llmJob = backgroundScope.launch {
+                val textBuffer = StringBuilder()
+                try {
+                    anthropicClient.streamCompletion(
+                        messages = updatedMessages,
+                        systemPrompt = llmPrompt ?: AnthropicClient.CLAIRE_SYSTEM_PROMPT,
+                    ).collect { chunk ->
+                        if (isStale()) {
+                            cancel()
+                            return@collect
+                        }
+
+                        // Send LLM chunk to client
+                        val llmResponse = json.encodeToString(
+                            UnifiedResponse.serializer(),
+                            UnifiedResponse.LlmCompletionResult(
+                                uuid = uuid,
+                                chatCompletionChunk = chunk,
+                                deviceStartTime = deviceStartTime,
+                                clientTimingId = clientTimingId,
+                            )
+                        )
+                        outputChannel.send(Frame.Text(llmResponse))
+
+                        // Buffer text for TTS
+                        val text = chunk.choices.firstOrNull()?.delta?.content
+                        if (text != null && enabledTts) {
+                            textBuffer.append(text)
+                            // Flush on sentence boundaries
+                            if (text.contains('.') || text.contains('!') || text.contains('?') || text.contains(',')) {
+                                ttsTextChannel.send(textBuffer.toString())
+                                textBuffer.clear()
+                            }
+                        }
+                    }
+                    // Flush remaining text
+                    if (textBuffer.isNotEmpty()) {
+                        ttsTextChannel.send(textBuffer.toString())
+                    }
+                } finally {
+                    ttsTextChannel.close()
+                }
+            }
+
+            // TTS streaming task — consumes text, sends audio to client
+            if (enabledTts) {
+                val ttsJob = backgroundScope.launch {
+                    for (textChunk in ttsTextChannel) {
+                        if (isStale()) break
+
+                        val audioChannel = Channel<TtsServerClient.TtsAudioChunk>(capacity = 50)
+
+                        // Request TTS audio
+                        launch {
+                            ttsServerClient.streamTts(
+                                text = textChunk,
+                                outputChannel = audioChannel,
+                            )
+                        }
+
+                        // Forward audio chunks to client
+                        for (audioChunk in audioChannel) {
+                            if (isStale()) break
+
+                            if (ttsProtobufVersion == ProtobufTtsResponseVersion) {
+                                // Binary protobuf response
+                                val ttsMsg = TtsResponseMessage(
+                                    uuid = uuid,
+                                    audio = audioChunk.audio,
+                                    isEnd = audioChunk.isEnd,
+                                    llmCompletionId = completionId,
+                                    deviceStartTime = deviceStartTime,
+                                    clientTimingId = clientTimingId,
+                                    audioFormat = "pcm_24000",
+                                )
+                                outputChannel.send(Frame.Binary(true, ProtoBuf.encodeToByteArray(ttsMsg)))
+                            } else {
+                                // JSON response (fallback)
+                                val ttsResponse = json.encodeToString(
+                                    UnifiedResponse.serializer(),
+                                    UnifiedResponse.TtsAudioResult(
+                                        uuid = uuid,
+                                        llmCompletionId = completionId,
+                                        ttsAudioResult = elevenlabs.ElevenLabsRepository.WebsocketAudioResult(
+                                            text = "",
+                                            byteArray = audioChunk.audio,
+                                            isEnd = audioChunk.isEnd,
+                                            alignment = null,
+                                        ),
+                                        deviceStartTime = deviceStartTime,
+                                        clientTimingId = clientTimingId,
+                                    )
+                                )
+                                outputChannel.send(Frame.Text(ttsResponse))
+                            }
+                        }
+                    }
+                }
+                ttsJob.join()
+            }
+
+            llmJob.join()
+
+        } catch (e: Exception) {
+            SLog.e("Pipeline error for $uuid: ${e.message}")
+            val errorResponse = json.encodeToString(
+                UnifiedResponse.serializer(),
+                UnifiedResponse.ErrorResult(
+                    uuid = uuid,
+                    errorSource = UnifiedResponse.ErrorResult.ErrorSource.UNKNOWN,
+                    message = e.message ?: "Unknown error",
+                )
+            )
+            outputChannel.send(Frame.Text(errorResponse))
+        }
+    }
+}

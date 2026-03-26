@@ -1,0 +1,5 @@
+fastapi>=0.104.0
+uvicorn>=0.24.0
+numpy>=1.24.0
+nemo_toolkit[asr]>=1.22.0
+torch>=2.1.0

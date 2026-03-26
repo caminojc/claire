@@ -1,0 +1,26 @@
+services:
+  claire-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: claire-server:latest
+    container_name: claire-server
+    restart: always
+    ports:
+      - "8080:8080"                    # realtime server (public)
+      - "127.0.0.1:1236:1236"         # stt (internal)
+      - "127.0.0.1:1238:1238"         # tts (internal)
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - PORT=8080
+      - STT_SERVER_URL=http://localhost:1236
+      - TTS_SERVER_URL=ws://localhost:1238
+      - CLAIRE_MODEL=claude-sonnet-4-20250514
+      - CLAIRE_VOICE=af_heart
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

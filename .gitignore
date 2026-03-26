@@ -1,0 +1,27 @@
+# Gradle
+.gradle/
+build/
+server/build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Environment
+.env
+*.pem
+*.key
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+venv/
+.venv/
+
+# Kotlin
+*.class
