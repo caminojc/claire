@@ -1,0 +1,468 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		049CFFAF5E0CB7AA7E6C7B21 /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 861F0626A1653E95C9DF4A75 /* AudioManager.swift */; };
+		205562702B696EF18FCC7DE8 /* ClaireApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2E199F0E82EFF8E5F1B3BAC /* ClaireApp.swift */; };
+		3B592346E2194FAA17793CEE /* ClaireApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2E199F0E82EFF8E5F1B3BAC /* ClaireApp.swift */; };
+		5D9AAFEFFEAD6C8C4ACE6092 /* ClaireWebSocketClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC285F694314EEF342F8C18 /* ClaireWebSocketClient.swift */; };
+		701250F13C457B2C160D58BB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC2F2107C5CC233F9B5A2BF /* ContentView.swift */; };
+		7B486BB052C6267D8B369038 /* CallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 232F6D7BA4161E6F4BA28D88 /* CallManager.swift */; };
+		8062472A0AB2A8815343A93B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC2F2107C5CC233F9B5A2BF /* ContentView.swift */; };
+		858348AA86A1CC26329997EC /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 861F0626A1653E95C9DF4A75 /* AudioManager.swift */; };
+		ABC4325A15ADB3CB588C4CD7 /* ClaireWebSocketClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC285F694314EEF342F8C18 /* ClaireWebSocketClient.swift */; };
+		B88FB41897417FAB09B384E5 /* CallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 232F6D7BA4161E6F4BA28D88 /* CallManager.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		232F6D7BA4161E6F4BA28D88 /* CallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallManager.swift; sourceTree = "<group>"; };
+		5CC285F694314EEF342F8C18 /* ClaireWebSocketClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaireWebSocketClient.swift; sourceTree = "<group>"; };
+		861F0626A1653E95C9DF4A75 /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
+		9F2253FC675C36785FF786DE /* Claire.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Claire.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A2E199F0E82EFF8E5F1B3BAC /* ClaireApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaireApp.swift; sourceTree = "<group>"; };
+		ACC2F2107C5CC233F9B5A2BF /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		AD05245FE411202B460B93B3 /* Claire.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Claire.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		233021C3C7304999E06BED8A /* Network */ = {
+			isa = PBXGroup;
+			children = (
+				5CC285F694314EEF342F8C18 /* ClaireWebSocketClient.swift */,
+			);
+			path = Network;
+			sourceTree = "<group>";
+		};
+		47F846C4D5AD4225F8EC6741 = {
+			isa = PBXGroup;
+			children = (
+				886014B211FFBB2657E14543 /* Claire */,
+				7C7E7015F2B4C02F0C6038ED /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		4BC30239F78EB47BE3B15BD5 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				232F6D7BA4161E6F4BA28D88 /* CallManager.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		5B2F0844386746E2C5223AEF /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				AD9460497007601885D4BC70 /* App */,
+				FE62DCC5F397C62CBDF2B30D /* Audio */,
+				4BC30239F78EB47BE3B15BD5 /* Models */,
+				233021C3C7304999E06BED8A /* Network */,
+				6BB6CE21A1B88D4CC6EEB005 /* Views */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		6BB6CE21A1B88D4CC6EEB005 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				ACC2F2107C5CC233F9B5A2BF /* ContentView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		7C7E7015F2B4C02F0C6038ED /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9F2253FC675C36785FF786DE /* Claire.app */,
+				AD05245FE411202B460B93B3 /* Claire.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		886014B211FFBB2657E14543 /* Claire */ = {
+			isa = PBXGroup;
+			children = (
+				5B2F0844386746E2C5223AEF /* Sources */,
+			);
+			path = Claire;
+			sourceTree = "<group>";
+		};
+		AD9460497007601885D4BC70 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A2E199F0E82EFF8E5F1B3BAC /* ClaireApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		FE62DCC5F397C62CBDF2B30D /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				861F0626A1653E95C9DF4A75 /* AudioManager.swift */,
+			);
+			path = Audio;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		230FC60F24E4F7D6F7E8449D /* Claire_macOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C51F5349F4EF3DF13268E2C4 /* Build configuration list for PBXNativeTarget "Claire_macOS" */;
+			buildPhases = (
+				DFFC596298EA1048730F2948 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Claire_macOS;
+			packageProductDependencies = (
+			);
+			productName = Claire_macOS;
+			productReference = AD05245FE411202B460B93B3 /* Claire.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CF6C56D9BC4D447D3BDC33FF /* Claire_iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AF514561FAFA5AE8D5D7D906 /* Build configuration list for PBXNativeTarget "Claire_iOS" */;
+			buildPhases = (
+				6193014BFE21C5D64296AE88 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Claire_iOS;
+			packageProductDependencies = (
+			);
+			productName = Claire_iOS;
+			productReference = 9F2253FC675C36785FF786DE /* Claire.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		BBEAB91B5989EC8E37A3DDEF /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					230FC60F24E4F7D6F7E8449D = {
+						DevelopmentTeam = "";
+					};
+					CF6C56D9BC4D447D3BDC33FF = {
+						DevelopmentTeam = "";
+					};
+				};
+			};
+			buildConfigurationList = C39529DD25152983E82D7FAD /* Build configuration list for PBXProject "Claire" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 47F846C4D5AD4225F8EC6741;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				CF6C56D9BC4D447D3BDC33FF /* Claire_iOS */,
+				230FC60F24E4F7D6F7E8449D /* Claire_macOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		6193014BFE21C5D64296AE88 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				858348AA86A1CC26329997EC /* AudioManager.swift in Sources */,
+				B88FB41897417FAB09B384E5 /* CallManager.swift in Sources */,
+				3B592346E2194FAA17793CEE /* ClaireApp.swift in Sources */,
+				ABC4325A15ADB3CB588C4CD7 /* ClaireWebSocketClient.swift in Sources */,
+				8062472A0AB2A8815343A93B /* ContentView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DFFC596298EA1048730F2948 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				049CFFAF5E0CB7AA7E6C7B21 /* AudioManager.swift in Sources */,
+				7B486BB052C6267D8B369038 /* CallManager.swift in Sources */,
+				205562702B696EF18FCC7DE8 /* ClaireApp.swift in Sources */,
+				5D9AAFEFFEAD6C8C4ACE6092 /* ClaireWebSocketClient.swift in Sources */,
+				701250F13C457B2C160D58BB /* ContentView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		14A5F5FEAEE1E4B7D93E98F2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Release;
+		};
+		24A2921BD58D0F4E0BD637E2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_GENERATION_MODE = GeneratedFile;
+				INFOPLIST_KEY_CFBundleDisplayName = Claire;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Claire needs access to your microphone for voice conversations.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.caminojc.claire;
+				PRODUCT_NAME = Claire;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+			};
+			name = Release;
+		};
+		8C6242F50BE6DB4C9B2DD553 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_GENERATION_MODE = GeneratedFile;
+				INFOPLIST_KEY_CFBundleDisplayName = Claire;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Claire needs access to your microphone for voice conversations.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.caminojc.claire;
+				PRODUCT_NAME = Claire;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A70509C6FF62964E4EE6D85C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.10;
+			};
+			name = Debug;
+		};
+		B91945E73279631E2AED305D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_GENERATION_MODE = GeneratedFile;
+				INFOPLIST_KEY_CFBundleDisplayName = Claire;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Claire needs access to your microphone for voice conversations.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.caminojc.claire;
+				PRODUCT_NAME = Claire;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+			};
+			name = Debug;
+		};
+		BEB5CF55ECF750D26ED668E6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_GENERATION_MODE = GeneratedFile;
+				INFOPLIST_KEY_CFBundleDisplayName = Claire;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Claire needs access to your microphone for voice conversations.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.caminojc.claire;
+				PRODUCT_NAME = Claire;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AF514561FAFA5AE8D5D7D906 /* Build configuration list for PBXNativeTarget "Claire_iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8C6242F50BE6DB4C9B2DD553 /* Debug */,
+				BEB5CF55ECF750D26ED668E6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C39529DD25152983E82D7FAD /* Build configuration list for PBXProject "Claire" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A70509C6FF62964E4EE6D85C /* Debug */,
+				14A5F5FEAEE1E4B7D93E98F2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C51F5349F4EF3DF13268E2C4 /* Build configuration list for PBXNativeTarget "Claire_macOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B91945E73279631E2AED305D /* Debug */,
+				24A2921BD58D0F4E0BD637E2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = BBEAB91B5989EC8E37A3DDEF /* Project object */;
+}
