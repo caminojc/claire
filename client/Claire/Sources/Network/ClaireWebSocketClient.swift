@@ -10,7 +10,7 @@ class ClaireWebSocketClient: NSObject {
 
     weak var delegate: ClaireWebSocketDelegate?
 
-    init(serverUrl: String = "ws://localhost:8080/unified") {
+    init(serverUrl: String = "ws://192.168.86.24:8080/unified") {
         self.serverUrl = serverUrl
         super.init()
         self.session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)

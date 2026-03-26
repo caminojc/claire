@@ -19,7 +19,15 @@ struct ContentView: View {
                 if callManager.state == .idle {
                     IdleView()
                 } else {
-                    // Empty center during call (just the ambient background)
+                    // Status text during call
+                    if !callManager.statusMessage.isEmpty {
+                        Text(callManager.statusMessage)
+                            .font(.system(size: 15))
+                            .foregroundColor(.white.opacity(0.7))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
+                            .lineLimit(3)
+                    }
                 }
 
                 Spacer()
