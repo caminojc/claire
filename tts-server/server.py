@@ -116,6 +116,38 @@ async def websocket_tts(websocket: WebSocket):
         logger.error(f"TTS WebSocket error: {e}")
 
 
+@app.post("/synthesize")
+async def synthesize(request: Request):
+    """Simple HTTP TTS: POST text, get back PCM audio bytes."""
+    body = await request.json()
+    text = body.get("text", "").strip()
+    voice_name = body.get("voice", "af_heart")
+    speed_val = body.get("speed", 1.0)
+
+    if not text or tts_model is None:
+        return PlainTextResponse("no text or model", status_code=400)
+
+    try:
+        all_audio = []
+        generator = tts_model(text, voice=voice_name, speed=speed_val)
+        for i, (gs, ps, audio) in enumerate(generator):
+            if audio is None:
+                continue
+            audio_np = audio.numpy() if hasattr(audio, "numpy") else np.array(audio)
+            audio_int16 = (audio_np * 32767).astype(np.int16)
+            all_audio.append(audio_int16.tobytes())
+
+        pcm_bytes = b"".join(all_audio)
+        import base64
+        audio_b64 = base64.b64encode(pcm_bytes).decode("utf-8")
+
+        return {"audio_base64": audio_b64, "sample_rate": SAMPLE_RATE, "format": "pcm_int16"}
+
+    except Exception as e:
+        logger.error(f"Synthesize error: {e}")
+        return PlainTextResponse(str(e), status_code=500)
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=1238)
