@@ -1,3 +1,6 @@
 [submodule "submodules/atria-kotlin"]
 	path = submodules/atria-kotlin
 	url = https://github.com/smplrtc/atria-kotlin.git
+[submodule "submodules/atria"]
+	path = submodules/atria
+	url = https://github.com/smplrtc/atria.git
