@@ -1,9 +1,9 @@
-# Claire Server — Docker build for DGX deployment
+# Claire Server — Docker build for DGX Spark (aarch64, CUDA 13.0)
 # 3 services: Kotlin realtime server, Python STT (Parakeet), Python TTS (Kokoro)
 # No llama.cpp, no whisper.cpp native — all inference via Python servers + Claude API
 
 # ---------- Stage 1: Build Kotlin server ----------
-FROM nvidia/cuda:12.4.1-devel-ubuntu22.04 AS server-build
+FROM ubuntu:22.04 AS server-build
 WORKDIR /src
 
 RUN apt-get update && apt-get install -y \
@@ -14,17 +14,19 @@ COPY . /src/claire
 
 WORKDIR /src/claire
 
-RUN dos2unix ./gradlew && chmod +x ./gradlew
+RUN dos2unix ./gradlew 2>/dev/null || true && chmod +x ./gradlew
 
-ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-ENV GRADLE_OPTS="-Xmx2g -XX:MaxMetaspaceSize=512m"
+# aarch64-compatible JAVA_HOME
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk-arm64
+ENV GRADLE_OPTS="-Xmx4g -XX:MaxMetaspaceSize=512m"
 
 # Initialize submodules and build fat JAR
-RUN git submodule update --init --recursive 2>/dev/null || true
+RUN git init 2>/dev/null || true && \
+    git submodule update --init --recursive 2>/dev/null || true
 RUN ./gradlew clean :server:shadowJar -x test --no-build-cache --stacktrace
 
 # ---------- Stage 2: Runtime ----------
-FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
+FROM ubuntu:22.04
 WORKDIR /app
 
 RUN mkdir -p /app/server /app/stt-server /app/tts-server /app/logs
@@ -37,7 +39,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # ---- Kotlin realtime server ----
-COPY --from=server-build /src/claire/server/build/libs/*-all.jar /app/server/claire-server.jar
+COPY --from=server-build /src/claire/server/build/libs/server-all.jar /app/server/claire-server.jar
 
 # ---- STT server (Parakeet) ----
 WORKDIR /app/stt-server
