@@ -101,8 +101,11 @@ extension CallManager: ClaireWebSocketDelegate {
             state = .connected
             startTimer()
 
-            // PCM16 since we're using AVAudioEngine capture (not mel codec)
             webSocketClient.sendConfig(uuid: sessionUuid, codecUpstream: "pcm16_16kHz")
+
+            audioManager.onStatusMessage = { [weak self] msg in
+                Task { @MainActor in self?.statusMessage = msg }
+            }
 
             audioManager.onSpeechSegment = { [weak self] segment in
                 Task { @MainActor in

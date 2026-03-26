@@ -1,47 +1,42 @@
 import AVFoundation
 import Accelerate
+#if os(macOS)
+import AVKit
+#endif
 
-/// Audio pipeline for Claire using AVAudioEngine + SMPL AFE.
-/// Works on both macOS and iOS.
-///
-/// Capture: Mic → AVAudioEngine tap → resample 16kHz → AFE (AEC/NS) → VAD → segment
-/// Render:  TTS PCM → AVAudioPlayerNode → AFE render (echo ref) → speaker
-class AudioManager: NSObject {
+/// Minimal audio pipeline: AVAudioEngine capture → VAD → PCM segments
+/// TTS playback via AVAudioPlayerNode
+class AudioManager {
 
-    // Audio engine
     private var engine: AVAudioEngine?
     private var playerNode: AVAudioPlayerNode?
     private var captureConverter: AVAudioConverter?
+    private let captureSampleRate: Double = 16000
 
-    // SMPL AFE
-    private var afeProcessor: SMPLAFEProcessor?
-
-    // VAD state
+    // VAD
     private var isSpeaking = false
     private var speechBuffer = Data()
     private var silenceFrameCount = 0
     private var speechFrameCount = 0
-    private let speechThresholdDB: Float = -35
-    private let silenceTimeout = 25      // ~500ms
-    private let minSpeechFrames = 10     // ~200ms
+    private let speechThresholdDB: Float = -40
+    private let silenceTimeout = 30
     private var isMuted = false
+    private var bufferCount = 0
 
-    // Format constants
-    private let captureSampleRate: Double = 16000
-    private let playbackSampleRate: Double = 24000
     private lazy var playbackFormat: AVAudioFormat = {
-        AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: playbackSampleRate, channels: 1, interleaved: true)!
+        AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 24000, channels: 1, interleaved: false)!
     }()
 
     // Callbacks
     var onSpeechSegment: ((Data) -> Void)?
     var onVADStateChanged: ((Bool) -> Void)?
+    var onStatusMessage: ((String) -> Void)?
 
     // Levels
-    var userSpeechLevel: Float { afeProcessor?.postAfeLevel() ?? 0 }
-    var playoutLevel: Float { afeProcessor?.playoutLevel() ?? 0 }
+    var userSpeechLevel: Float = 0
+    var playoutLevel: Float = 0
 
-    // MARK: - Setup
+    // MARK: - Audio Session
 
     func configureAudioSession() {
         #if os(iOS)
@@ -58,200 +53,202 @@ class AudioManager: NSObject {
         #endif
     }
 
-    func initAFE() {
-        let modelPath = Bundle.main.path(forResource: "jrev_model_v82_smpl", ofType: "zip") ?? ""
-        let configPath = Bundle.main.path(forResource: "jrev_params_v57k", ofType: "json") ?? ""
-
-        guard !modelPath.isEmpty, !configPath.isEmpty else {
-            print("[Audio] AFE model files missing! modelPath=\(modelPath) configPath=\(configPath)")
-            return
-        }
-
-        print("[Audio] Initializing SMPL AFE")
-        print("[Audio]   Model: \(modelPath)")
-        print("[Audio]   Config: \(configPath)")
-
-        afeProcessor = SMPLAFEProcessor(
-            modelPath: modelPath,
-            configPath: configPath,
-            recordingOutputPath: nil,
-            startupFilePath: nil,
-            compressorMode: 0,
-            useAgc: false
-        )
-
-        // Post-processing callback for capture metering
-        afeProcessor?.postProcessingCallback = { [weak self] samples, frameCount, sampleRate, seqNum in
-            // Audio has been through AEC + NS — this is clean speech
-            // We can use this for VAD and sending to server
-        }
-
-        print("[Audio] SMPL AFE initialized")
-    }
-
-    // MARK: - Capture
+    // MARK: - Start
 
     func startCapture() {
-        initAFE()
+        print("[Audio] Requesting mic permission...")
+        onStatusMessage?("Requesting mic access...")
+
+        #if os(macOS)
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized:
+            print("[Audio] Already authorized")
+            startEngine()
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        print("[Audio] Permission granted")
+                        self?.startEngine()
+                    } else {
+                        print("[Audio] Permission denied")
+                        self?.onStatusMessage?("Mic denied — check System Settings")
+                    }
+                }
+            }
+        default:
+            print("[Audio] Permission denied/restricted")
+            onStatusMessage?("Mic access denied")
+        }
+        #else
+        AVAudioApplication.requestRecordPermission { [weak self] granted in
+            DispatchQueue.main.async {
+                if granted { self?.startEngine() }
+                else { self?.onStatusMessage?("Mic denied") }
+            }
+        }
+        #endif
+    }
+
+    private func startEngine() {
+        print("[Audio] Starting engine...")
+        onStatusMessage?("Starting audio...")
 
         engine = AVAudioEngine()
         playerNode = AVAudioPlayerNode()
-        guard let engine = engine, let player = playerNode else { return }
+        guard let engine, let player = playerNode else {
+            print("[Audio] FATAL: can't create engine")
+            return
+        }
 
-        // Attach player for TTS playout
         engine.attach(player)
-        engine.connect(player, to: engine.mainMixerNode, format: playbackFormat)
 
         let inputNode = engine.inputNode
         let hwFormat = inputNode.outputFormat(forBus: 0)
-        print("[Audio] Hardware format: \(hwFormat)")
+        print("[Audio] HW format: rate=\(hwFormat.sampleRate) ch=\(hwFormat.channelCount)")
 
-        // Convert to 16kHz mono for capture
-        guard let convertFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32,
-                                                 sampleRate: captureSampleRate,
-                                                 channels: 1, interleaved: false) else {
-            print("[Audio] Cannot create convert format")
+        guard hwFormat.sampleRate > 0, hwFormat.channelCount > 0 else {
+            print("[Audio] FATAL: invalid hw format")
+            onStatusMessage?("No mic available")
             return
         }
-        captureConverter = AVAudioConverter(from: hwFormat, to: convertFormat)
 
-        // Install capture tap
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: hwFormat) { [weak self] buffer, time in
-            self?.processCaptureBuffer(buffer)
+        // Converter: hardware rate → 16kHz mono
+        guard let targetFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32,
+                                               sampleRate: captureSampleRate,
+                                               channels: 1, interleaved: false) else { return }
+        captureConverter = AVAudioConverter(from: hwFormat, to: targetFormat)
+
+        // Connect player for TTS output
+        let outputFormat = engine.outputNode.inputFormat(forBus: 0)
+        engine.connect(player, to: engine.mainMixerNode, format: outputFormat)
+
+        // Tap mic audio
+        bufferCount = 0
+        inputNode.installTap(onBus: 0, bufferSize: 4096, format: hwFormat) { [weak self] buffer, _ in
+            self?.handleCapture(buffer)
         }
 
         do {
             try engine.start()
             player.play()
-            print("[Audio] Engine started, capture active")
+            print("[Audio] Engine running!")
+            onStatusMessage?("Ready — speak to Claire")
         } catch {
-            print("[Audio] Engine start failed: \(error)")
+            print("[Audio] Start failed: \(error)")
+            onStatusMessage?("Audio error: \(error.localizedDescription)")
         }
     }
 
-    private func processCaptureBuffer(_ buffer: AVAudioPCMBuffer) {
+    // MARK: - Capture Processing
+
+    private func handleCapture(_ buffer: AVAudioPCMBuffer) {
         guard !isMuted, let converter = captureConverter else { return }
 
-        // Convert to 16kHz mono
-        let frameCapacity = AVAudioFrameCount(Double(buffer.frameLength) * captureSampleRate / buffer.format.sampleRate)
-        guard let converted = AVAudioPCMBuffer(pcmFormat: converter.outputFormat, frameCapacity: frameCapacity) else { return }
+        bufferCount += 1
+        if bufferCount == 1 {
+            print("[Audio] First buffer: \(buffer.frameLength) frames @ \(buffer.format.sampleRate)Hz")
+        }
+
+        // Resample to 16kHz mono
+        let outFrames = AVAudioFrameCount(Double(buffer.frameLength) * captureSampleRate / buffer.format.sampleRate)
+        guard let out = AVAudioPCMBuffer(pcmFormat: converter.outputFormat, frameCapacity: max(outFrames, 160)) else { return }
 
         var error: NSError?
-        var hasData = false
-        converter.convert(to: converted, error: &error) { _, outStatus in
-            if hasData { outStatus.pointee = .noDataNow; return nil }
-            hasData = true
-            outStatus.pointee = .haveData
+        var consumed = false
+        converter.convert(to: out, error: &error) { _, status in
+            if consumed { status.pointee = .noDataNow; return nil }
+            consumed = true
+            status.pointee = .haveData
             return buffer
         }
-        guard converted.frameLength > 0, let floatData = converted.floatChannelData?[0] else { return }
-        let frameCount = Int(converted.frameLength)
+        guard out.frameLength > 0, let samples = out.floatChannelData?[0] else { return }
+        let count = Int(out.frameLength)
 
-        // Run through AFE capture processing (AEC + NS)
-        if let afe = afeProcessor {
-            var channelPtr = floatData
-            // Scale to FloatS16 range for AFE
-            var scale: Float = 32767.0
-            vDSP_vsmul(floatData, 1, &scale, floatData, 1, vDSP_Length(frameCount))
-
-            withUnsafeMutablePointer(to: &channelPtr) { ptr in
-                afe.processCaptureChannels(ptr, frameCount: Int32(frameCount), numChannels: 1)
-            }
-
-            // Scale back
-            var invScale: Float = 1.0 / 32767.0
-            vDSP_vsmul(floatData, 1, &invScale, floatData, 1, vDSP_Length(frameCount))
-        }
-
-        // Energy VAD on post-AFE audio
+        // RMS energy
         var rms: Float = 0
-        vDSP_measqv(floatData, 1, &rms, vDSP_Length(frameCount))
+        vDSP_measqv(samples, 1, &rms, vDSP_Length(count))
         let db = 10 * log10f(max(rms, 1e-10))
-        let isSpeechFrame = db > speechThresholdDB
+        userSpeechLevel = max(0, min(1, (db + 50) / 50))  // map -50..0 dB to 0..1
 
-        if isSpeechFrame {
+        let speaking = db > speechThresholdDB
+
+        if speaking {
             speechFrameCount += 1
             silenceFrameCount = 0
             if !isSpeaking && speechFrameCount >= 3 {
                 isSpeaking = true
                 speechBuffer = Data()
-                onVADStateChanged?(true)
+                DispatchQueue.main.async { self.onVADStateChanged?(true) }
             }
         } else {
             silenceFrameCount += 1
             speechFrameCount = max(0, speechFrameCount - 1)
             if isSpeaking && silenceFrameCount >= silenceTimeout {
                 isSpeaking = false
-                onVADStateChanged?(false)
-                if speechBuffer.count > 6400 { // >200ms at 16kHz 16-bit
-                    onSpeechSegment?(speechBuffer)
+                DispatchQueue.main.async { self.onVADStateChanged?(false) }
+                if speechBuffer.count > 6400 {
+                    let seg = speechBuffer
+                    DispatchQueue.main.async { self.onSpeechSegment?(seg) }
                 }
                 speechBuffer = Data()
             }
         }
 
-        // Accumulate PCM while speaking
         if isSpeaking {
-            var pcm = Data(capacity: frameCount * 2)
-            for i in 0..<frameCount {
-                let clamped = max(-1.0, min(1.0, floatData[i]))
-                var sample = Int16(clamped * 32767)
-                withUnsafeBytes(of: &sample) { pcm.append(contentsOf: $0) }
+            var pcm = Data(capacity: count * 2)
+            for i in 0..<count {
+                var s = Int16(max(-1, min(1, samples[i])) * 32767)
+                withUnsafeBytes(of: &s) { pcm.append(contentsOf: $0) }
             }
             speechBuffer.append(pcm)
         }
     }
 
+    // MARK: - Stop
+
     func stopCapture() {
-        if isSpeaking && !speechBuffer.isEmpty {
-            onSpeechSegment?(speechBuffer)
-            speechBuffer = Data()
-            isSpeaking = false
+        if isSpeaking && speechBuffer.count > 6400 {
+            let seg = speechBuffer
+            onSpeechSegment?(seg)
         }
+        speechBuffer = Data()
+        isSpeaking = false
         engine?.inputNode.removeTap(onBus: 0)
         playerNode?.stop()
         engine?.stop()
         engine = nil
         playerNode = nil
         captureConverter = nil
-        afeProcessor = nil
     }
 
     // MARK: - Playback
 
     func playAudio(pcmData: Data, sampleRate: Double = 24000) {
         guard let player = playerNode, pcmData.count > 1 else { return }
-
         let frameCount = pcmData.count / 2
-        guard let pcmBuffer = AVAudioPCMBuffer(pcmFormat: playbackFormat,
-                                                frameCapacity: AVAudioFrameCount(frameCount)) else { return }
-        pcmBuffer.frameLength = AVAudioFrameCount(frameCount)
 
-        pcmData.withUnsafeBytes { rawPtr in
-            guard let src = rawPtr.baseAddress else { return }
-            memcpy(pcmBuffer.int16ChannelData![0], src, pcmData.count)
-        }
+        // Convert PCM int16 to float32 for playback
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: playbackFormat,
+                                             frameCapacity: AVAudioFrameCount(frameCount)) else { return }
+        buffer.frameLength = AVAudioFrameCount(frameCount)
 
-        // Feed to AFE render for echo reference
-        if let afe = afeProcessor, let int16Data = pcmBuffer.int16ChannelData?[0] {
-            // Convert to float for AFE
-            let floatBuf = UnsafeMutablePointer<Float>.allocate(capacity: frameCount)
-            defer { floatBuf.deallocate() }
+        pcmData.withUnsafeBytes { raw in
+            guard let src = raw.bindMemory(to: Int16.self).baseAddress,
+                  let dst = buffer.floatChannelData?[0] else { return }
             for i in 0..<frameCount {
-                floatBuf[i] = Float(int16Data[i])  // Already in FloatS16 range
-            }
-            var channelPtr = floatBuf
-            withUnsafeMutablePointer(to: &channelPtr) { ptr in
-                afe.processRenderChannels(ptr, frameCount: Int32(frameCount), numChannels: 1)
+                dst[i] = Float(src[i]) / 32768.0
             }
         }
 
-        player.scheduleBuffer(pcmBuffer, completionHandler: nil)
+        player.scheduleBuffer(buffer)
+        playoutLevel = 0.5
     }
 
     func interruptPlayback() {
         playerNode?.stop()
         playerNode?.play()
+        playoutLevel = 0
     }
 
     // MARK: - Controls
