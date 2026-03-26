@@ -10,8 +10,8 @@ import java.time.Duration
 
 fun Application.configureRouting(scope: Scope) {
     install(WebSockets) {
-        pingPeriod = Duration.ofSeconds(15)
-        timeout = Duration.ofSeconds(15)
+        pingPeriod = Duration.ofSeconds(30)
+        timeout = Duration.ofSeconds(120)  // Long timeout — TTS can take 10+ seconds
         maxFrameSize = Long.MAX_VALUE
         masking = false
     }

@@ -239,12 +239,18 @@ class AudioManager {
     // MARK: - Playback
 
     func playAudio(pcmData: Data, sampleRate: Double = 24000) {
-        guard let player = playerNode, pcmData.count > 1 else { return }
+        guard let player = playerNode, let eng = engine, eng.isRunning, pcmData.count > 1 else {
+            print("[Audio] playAudio: engine not running or no data")
+            return
+        }
         let frameCount = pcmData.count / 2
 
         // Convert PCM int16 to float32 for playback
         guard let buffer = AVAudioPCMBuffer(pcmFormat: playbackFormat,
-                                             frameCapacity: AVAudioFrameCount(frameCount)) else { return }
+                                             frameCapacity: AVAudioFrameCount(frameCount)) else {
+            print("[Audio] playAudio: can't create buffer")
+            return
+        }
         buffer.frameLength = AVAudioFrameCount(frameCount)
 
         pcmData.withUnsafeBytes { raw in
@@ -255,8 +261,16 @@ class AudioManager {
             }
         }
 
-        player.scheduleBuffer(buffer)
-        playoutLevel = 0.5
+        do {
+            if !player.isPlaying {
+                player.play()
+            }
+            player.scheduleBuffer(buffer)
+            playoutLevel = 0.5
+            print("[Audio] Scheduled \(frameCount) frames for playback")
+        } catch {
+            print("[Audio] playAudio error: \(error)")
+        }
     }
 
     func interruptPlayback() {
