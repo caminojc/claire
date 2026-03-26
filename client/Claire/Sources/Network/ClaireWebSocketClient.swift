@@ -23,7 +23,7 @@ class ClaireWebSocketClient: NSObject {
         webSocket = session?.webSocketTask(with: url)
         webSocket?.resume()
         listenForMessages()
-        delegate?.didConnect()
+        // didConnect fired by URLSessionWebSocketDelegate when socket opens
     }
 
     func disconnect() {
