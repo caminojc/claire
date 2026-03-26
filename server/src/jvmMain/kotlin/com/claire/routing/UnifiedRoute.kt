@@ -8,6 +8,7 @@ import com.claire.backgroundScope
 import com.claire.llm.AnthropicClient
 import com.claire.stt.SttServerClient
 import com.claire.tts.TtsServerClient
+import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
