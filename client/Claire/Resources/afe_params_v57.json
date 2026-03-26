@@ -1,0 +1,109 @@
+{
+    "main": {
+        "mic_hpf_fc": [114.39891286701805, false, 10, 200, "Fc of the input high-pass filter on the mic"]
+    },
+    "time_series_info": {
+        "mute_thresh_dB": [-88.4828466369494, false, -100, -80, "RMS level in dB below which an input is considered muted"],
+        "clip_thresh_dB": [-1, false, -3, 0, "Level in dB above which an input is considered clipped"],
+        "smooth_rms_rt60": [163.25575889015988, false, 50, 300, "RMS time-smoothing constant"]
+    },
+    "coherence": {
+        "ave_coh_start_hz": [308.4372204418809, false, 50, 500, "Start frequency at which the average coherence is calculated"],
+        "ave_coh_mid_hz": [2518.094620399358, false, 2000, 4000, "Frequency defining the boundry between vowel and consonants"],
+        "ave_coh_end_hz": [6538.870184738445, false, 6500, 8000, "End frequency at which the average coherence is calculated"],
+        "running_ave_window_ms": [50, false, 40, 80, "Time over which coherence is computed"],
+        "smooth_coherence_tc_ms": [241.26664141456618, false, 150, 350, "Time constant for coherence smoothing"]
+    },
+    "coupling_factor": {
+        "rise_tc_ms": [2189.8928568842657, false, 500, 5000, "Rise time constant (rt60) for mic ref coupling factor"],
+        "fall_tc_ms": [1809.907405747379, false, 500, 5000, "Fall time constant (rt60) for mic ref coupling factor"],
+        "min_coh": [0.904177796569015, false, 0.5, 0.95, "Coherence above which mic ref coupling factor adapts"],
+        "max_coh_rise_tc_ms": [121.64753934415049, false, 50, 500, "Rise time constant (rt60) for mic ref coupling factor at max coherence"],
+        "init_cf": [0.0038177402252211564, false, 0.0, 3.0, "Initial coupling factor between ref and mic"]
+    },
+    "noise_estimation": {
+        "init_fast_adapt_time_period_ms": [547.6612207662606, false, 150, 1000, "Period of time at beginning of call where noise estimate adapts quickly"],
+        "init_begin_rise_tc_ms": [1030.6365857466512, false, 100, 2000, "Rise time constant (RT60) at beginning of call"],
+        "init_end_rise_tc_ms": [43197.949362098705, false, 10000, 100000, "Rise time constant (RT60) at end of initial period of call"],
+        "rise_dbps": [1.2075273718028368, false, 0.25, 2, "Number of dB per second noise estimate is allowed to rise for duration of call"],
+        "fall_tc_ms": [103.36928353078464, false, 50, 500, "Fall time constant (RT60) after initial period"],
+        "offset_dB": [8.557389711489655, false, 6, 12, "A correction factor applied to published noise estimate to make it near-equivalent to average in power"]
+    },
+    "acoustic_echo_canceller": {
+        "min_ave_coh": [0.18528526196812786, false, 0.15, 0.4, "Average coherence below which echo canceller is bypassed"],
+        "min_coh": [0.2617914918490055, false, 0.0, 0.4, "Bin by bin coherence below which adaptation freezes"],
+        "adapt_exp": [0.3378370867480468, false, 0.1, 2.0, "Adaptation factor raised to this power"],
+        "blend_exp": [1.3286280571401594, false, 0.0, 4.0, "E/Y blend ratio raised to this exponent"],
+        "blend_mult": [9.824304593365106, false, 1.0, 10.0, "E/Y blend ratio multiplier"]
+    },
+    "residual_enhancement": {
+        "prev_pwr_decay_rt60": [303.95933418635286, false, 0, 500, "Decay rate of residual output power after sudden suppression, as RT60"],
+        "inst_coef_input_spec_rt60_hz": [117.27688866596179, false, 0, 1000, "Instant coefficient input spectral smoothing coefficient RT60 specification in Hz"],
+        "inst_coef_input_temp_rt60_ms": [114.20770788355554, false, 0, 400, "Instant coefficient input temporal smoothing coefficient RT60 specification in ms"],
+        "vad_prob_onset_threshold": [0.3531229141148091, true, 0.001, 0.5, "VAD probability onset threshold, below which, afe output is set to zero"],
+        "vad_prob_offset_threshold": [0.29976013934564494, true, 0.001, 0.5, "VAD probability offset threshold, below which, afe output is set to zero"],
+        "smooth_vad_prob_rise_tc_sec": [0.012417101596823826, true, 0.0, 0.2, "Rise time (sec) constant for VAD probability smoothing. Default is instant"],
+        "smooth_vad_prob_fall_tc_sec": [1.0, true, 0.0, 1.0, "Fall time (sec) constant for VAD probability smoothing. Default is instant"]
+    },
+    "error_noise_estimation": {
+        "init_adapt_time_period_ms": [666.2472454830006, false, 150, 1000, "Period of time at beginning of call where noise estimate adapts quickly"],
+        "init_begin_rise_tc_ms": [886.4361695625898, false, 100, 2000, "Rise time constant (RT60) at beginning of call"],
+        "adapt_tc_ms": [57858.5740960954, false, 10000, 100000, "description"],
+        "fast_adapt_rise_tc_ms": [500.0, false, 500, 20000, "description"],
+        "fast_adapt_fall_tc_ms": [9244.722135659751, false, 500, 20000, "description"],
+        "error_adapt_tc_ms": [478.04366431599306, false, 100, 1000, "description"]
+    },
+    "noise_suppression": {
+        "bin_atten_dB": [10.0, false, 0, 10, "Maximum amount of bin-by-bin noise suppression, in dB"],
+        "bin_min_recur_dB": [-4.8040959041612075, false, -12, 0, "Minimum amount of attenuation due to previous coefficient, in dB"],
+        "bin_noise_overest_dB": [6.7141499428844345, false, 0, 10, "Offset applied to noise estimate for Weiner calculation, in dB"],
+        "fullband_atten_dB": [99.93321914116318, false, 0, 100, "Maximum amount of fullband noise suppression, in dB"],
+        "fullband_noise_overest_dB": [5.760141900785481, false, 0, 10, "Offset applied to noise estimate for Weiner calculation, in dB"],
+        "fullband_smooth_coef_rise_rt60": [4.508804629271639, false, 0, 200, "Rise time constant of smooth fullband coef"],
+        "fullband_smooth_coef_fall_rt60": [1855.5736556599215, false, 0, 5000, "Fall time constant of smooth fullband coef"]
+    },
+    "comfort_noise": {
+        "amplitude_dB": [-131.00683875852835, false, -180, -95, "RMS level of output comfort noise in dB"]
+    },
+    "delay_estimation": {
+        "max_delay_ms": [753.8111535816289, false, 700, 900, "Maximum delay estimate in ms"],
+        "init_phase_duration_ms": [958.6281708126435, false, 50, 5000, "Duration of the initial phase in ms"],
+        "xcc_high_delay_subsamp_threshold_ms": [200, false, 200, 300, "Threshold for when to use coarser subsampling. Higher is more CPU costly"],
+        "corr_win_duration_ms": [300.0, false, 300, 1500, "Duration of the correlation window in ms. Higher is more CPU costly"],
+        "min_corr_coef": [0.10277521040032504, false, 0.0, 0.3, "Minimum correlation before allowing it to be chosen as best delay"],
+        "min_vad_update_ratio_in_each_band": [0.017725314906632574, false, 0.0, 0.5, "Minimum ratio of VAD activity in each band, before allowing an update"],
+        "xcc_denom_offset": [5.766127079058213e-32, false, 1.175494351e-38, 1e-30, "Denominator offset in xcc calculation to prevent numerical issues, and to reduce impact from low energy signals"],
+        "start_freq_hz_band_0": [165, false, 0, 300, "Start of first band in Hz"],
+        "start_freq_hz_band_1": [1000, false, 400, 1500, "Start of second band in Hz"],
+        "start_freq_hz_band_2": [2500, false, 1600, 4000, "Start of third band in Hz"],
+        "hyst_max": [0.187400742425934, false, 0.0, 0.25, "Maximum hysteresis"],
+        "hyst_init": [0.0196804804858408, false, 0.0, 0.25, "Initial hysteresis"],
+        "hyst_add_time_const_sec": [1.2633691866476562, false, 0.01, 5.0, "Time constant when adding hysteresis"],
+        "hyst_reduce_time_const_sec": [9.508883909012466, false, 0.5, 30.0, "Time constant when hysteresis decays"],
+        "frac_delay_min_step_ms": [0.7523204269879565, false, 0.0, 5.0, "Minimum required change before reporting a new value"],
+        "frac_delay_smth_after_change_time_ms": [273.7052943688599, false, 0.0, 1000.0, "Time in ms where we smooth less after a change"],
+        "frac_delay_smth_after_change_time_const_sec": [0.23781577161650186, false, 0.01, 5.0, "Time constant to apply to the smoothed frac delay after integer delay changes"],
+        "frac_delay_smth_time_const_sec": [7.949950227082563, false, 0.01, 15.0, "Time constant to apply to the smoothed frac delay"],
+        "vad_threshold_relative_dB": [2.4902534129029137, false, 0.01, 6.0, "FE VAD threshold relative to the noise estimate"],
+        "vad_threshold_absolute_dB": [-79.28736530663139, false, -120.0, -70.0, "FE VAD absolute level threshold"],
+        "ref_noise_est_high_snr_dB": [5.765949876601978, false, 0.1, 16.0, "FE NL threshold for when to consider the signal to be high SNR"],
+        "ref_noise_est_input_smth_time_constant_sec": [0.04159150602342855, false, 0.0, 0.25, "FE NL input smoothing time constant"],
+        "ref_noise_est_init_smth_time_constant_sec": [0.13809969110539894, false, 0.0, 0.5, "FE NL initial smoothing time constant"],
+        "ref_noise_est_high_snr_smth_time_constant_sec": [6.417538099025243, false, 0.0, 10.0, "FE NL high SNR smoothing time constant"],
+        "ref_noise_est_fast_smth_time_constant_sec": [0.12162973595658966, false, 0.0, 10.0, "FE NL fast adaptation time constant"],
+        "ref_noise_est_init_time_ms": [516.5292532092525, false, 10.0, 5000.0, "FE NL initial phase time in ms"],
+        "xcc_inc_time_constant_sec": [0.05, false, 0.01, 5.0, "Time constant when increasing XCC"],
+        "xcc_dec_time_constant_sec": [2.5383860573257726, false, 0.01, 30.0, "Time constant when decreasing XCC"]
+    },
+    "vad_state_machine": {
+        "playout_state_pause_th": [0.6, false, 0.2, 0.9, "Playout state pause threshold"],
+        "playout_state_pause_to_duck_th_delta": [0.35, false, 0.1, 0.5, "Playout state threshold delta from pause to duck"],
+        "playout_state_duck_to_inactive_th_delta": [0.0, false, 0.0, 0.2, "Playout state threshold delta from duck to inactive"],
+        "playout_state_vad_smth_coef_time_constant_sec": [0.025, false, 0.0, 0.5, "Manually tune/override for reaction time adjustments. Playout state VAD output smoothing time constant in sec"],
+        "stt_segmentation_vad_smth_coef_time_constant_sec": [0.075, false, 0.0, 0.5, "Manually tune/override for reaction time adjustments. STT segmentation VAD output smoothing time constant in sec"],
+        "stt_segmentation_active_th": [0.4590306022065541, false, 0.1, 0.9, "STT segmentation threshold for activity"],
+        "stt_segmentation_inactive_th": [0.233807236144413, false, 0.1, 0.9, "STT segmentation threshold for inactivity"],
+        "stt_segmentation_start_before_activity_sec": [0.5, false, 0.0, 0.75, "Manually tune. STT segmentation time to start segment before detected activity"],
+        "stt_segmentation_active_to_inactive_hangover_sec": [0.75, false, 0.25, 0.75, "Manually tune. STT segmentation active to inactive hangover in sec"]
+    }
+}
