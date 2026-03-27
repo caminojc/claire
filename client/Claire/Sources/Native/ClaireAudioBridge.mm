@@ -1,6 +1,3 @@
-#import <TargetConditionals.h>
-#if TARGET_OS_OSX
-
 #import "ClaireAudioBridge.h"
 #include "SmplZipperClientApi.h"
 #include <memory>
@@ -134,4 +131,3 @@ public:
 
 @end
 
-#endif // TARGET_OS_OSX

@@ -55,9 +55,10 @@ targets:
         # Headers for both platforms
         HEADER_SEARCH_PATHS: "$(inherited) $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop $(PROJECT_DIR)/native"
         OTHER_LDFLAGS[sdk=macosx*]: "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation"
-        OTHER_LDFLAGS[sdk=iphoneos*]: "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate"
+        OTHER_LDFLAGS[sdk=iphoneos*]: "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lc++ -framework AudioToolbox -framework AVFoundation -framework Accelerate"
         OTHER_LDFLAGS[sdk=iphonesimulator*]: "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate"
         LIBRARY_SEARCH_PATHS[sdk=macosx*]: "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64"
+        LIBRARY_SEARCH_PATHS[sdk=iphoneos*]: "$(inherited) $(PROJECT_DIR)/native/build/ios-arm64"
       configs:
         Debug:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG

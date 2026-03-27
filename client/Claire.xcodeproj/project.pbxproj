@@ -343,9 +343,10 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(inherited) $(PROJECT_DIR)/native/build/ios-arm64";
 				"LIBRARY_SEARCH_PATHS[sdk=macosx*]" = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
 				MARKETING_VERSION = 0.1.0;
-				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lc++ -framework AudioToolbox -framework AVFoundation -framework Accelerate";
 				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
 				"OTHER_LDFLAGS[sdk=macosx*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
 				PRODUCT_BUNDLE_IDENTIFIER = com.caminojc.claire;
@@ -374,9 +375,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(inherited) $(PROJECT_DIR)/native/build/ios-arm64";
 				"LIBRARY_SEARCH_PATHS[sdk=macosx*]" = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
 				MARKETING_VERSION = 0.1.0;
-				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lc++ -framework AudioToolbox -framework AVFoundation -framework Accelerate";
 				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
 				"OTHER_LDFLAGS[sdk=macosx*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
 				PRODUCT_BUNDLE_IDENTIFIER = com.caminojc.claire;
@@ -470,9 +472,10 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(inherited) $(PROJECT_DIR)/native/build/ios-arm64";
 				"LIBRARY_SEARCH_PATHS[sdk=macosx*]" = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
 				MARKETING_VERSION = 0.1.0;
-				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lc++ -framework AudioToolbox -framework AVFoundation -framework Accelerate";
 				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
 				"OTHER_LDFLAGS[sdk=macosx*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
 				PRODUCT_BUNDLE_IDENTIFIER = com.caminojc.claire;
@@ -501,9 +504,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(inherited) $(PROJECT_DIR)/native/build/ios-arm64";
 				"LIBRARY_SEARCH_PATHS[sdk=macosx*]" = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
 				MARKETING_VERSION = 0.1.0;
-				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lc++ -framework AudioToolbox -framework AVFoundation -framework Accelerate";
 				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
 				"OTHER_LDFLAGS[sdk=macosx*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
 				PRODUCT_BUNDLE_IDENTIFIER = com.caminojc.claire;
