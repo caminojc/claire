@@ -30,13 +30,19 @@ targets:
     preBuildScripts:
       - name: Copy Model Files
         script: |
-          mkdir -p "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources"
-          cp -f "${PROJECT_DIR}/Claire/Resources/"*.dat "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
-          cp -f "${PROJECT_DIR}/Claire/Resources/"*.smpl "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
-          cp -f "${PROJECT_DIR}/Claire/Resources/"*.zip "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
-          cp -f "${PROJECT_DIR}/Claire/Resources/"*.json "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
-          cp -f "${PROJECT_DIR}/Claire/Resources/"*.mp3 "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
-          cp -f "${PROJECT_DIR}/Claire/Resources/"*.icns "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
+          # macOS: Contents/Resources/, iOS: root of .app
+          if [ "${PLATFORM_NAME}" = "macosx" ]; then
+            DEST="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources"
+          else
+            DEST="${BUILT_PRODUCTS_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}"
+          fi
+          mkdir -p "${DEST}"
+          cp -f "${PROJECT_DIR}/Claire/Resources/"*.dat "${DEST}/" 2>/dev/null || true
+          cp -f "${PROJECT_DIR}/Claire/Resources/"*.smpl "${DEST}/" 2>/dev/null || true
+          cp -f "${PROJECT_DIR}/Claire/Resources/"*.zip "${DEST}/" 2>/dev/null || true
+          cp -f "${PROJECT_DIR}/Claire/Resources/"*.json "${DEST}/" 2>/dev/null || true
+          cp -f "${PROJECT_DIR}/Claire/Resources/"*.mp3 "${DEST}/" 2>/dev/null || true
+          cp -f "${PROJECT_DIR}/Claire/Resources/"*.icns "${DEST}/" 2>/dev/null || true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.caminojc.claire

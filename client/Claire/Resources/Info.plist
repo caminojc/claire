@@ -4,6 +4,8 @@
 <dict>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Claire needs access to your microphone for voice conversations.</string>
 	<key>UISupportedInterfaceOrientations</key>
