@@ -119,6 +119,7 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                                         enabledTts = enabledTts,
                                         ttsProtobufVersion = ttsProtobufVersion,
                                         llmPrompt = llmPrompt,
+                                        codecUpstream = codecUpstream,
                                         latestPayloadUuid = latestPayloadUuid,
                                         outputChannel = outputChannel,
                                     )
@@ -166,6 +167,7 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                                                 enabledTts = enabledTts,
                                                 ttsProtobufVersion = ttsProtobufVersion,
                                                 llmPrompt = llmPrompt,
+                                                codecUpstream = codecUpstream,
                                                 latestPayloadUuid = latestPayloadUuid,
                                                 outputChannel = outputChannel,
                                             )
@@ -206,6 +208,7 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                                     enabledTts = enabledTts,
                                     ttsProtobufVersion = ttsProtobufVersion,
                                     llmPrompt = llmPrompt,
+                                    codecUpstream = codecUpstream,
                                     latestPayloadUuid = latestPayloadUuid,
                                     outputChannel = outputChannel,
                                 )
@@ -238,6 +241,7 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
         enabledTts: Boolean,
         ttsProtobufVersion: Int,
         llmPrompt: String?,
+        codecUpstream: String,
         latestPayloadUuid: AtomicReference<String>,
         outputChannel: Channel<Frame>,
     ) {
@@ -254,8 +258,8 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                 if (!enabledLlm) return
             } else {
                 // === Phase 1: STT ===
-                SLog.i("Transcribing ${audioPayload.size} bytes of audio...")
-                val sttText = sttServerClient.transcribe(audioPayload)
+                SLog.i("Transcribing ${audioPayload.size} bytes (codec=$codecUpstream)...")
+                val sttText = sttServerClient.transcribe(audioPayload, codecUpstream)
                 SLog.i("STT result: '$sttText'")
                 if (sttText.isBlank() || isStale()) return
 
