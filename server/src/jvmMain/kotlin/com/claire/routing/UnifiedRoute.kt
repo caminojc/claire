@@ -361,7 +361,7 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                         // Forward audio chunks to client
                         for (audioChunk in audioChannel) {
                             if (isStale()) break
-                            if (audioChunk.audio.isEmpty()) continue
+                            if (audioChunk.audio.isEmpty() || audioChunk.isEnd) break
 
                             SLog.i("Sending TTS audio to client: ${audioChunk.audio.size} bytes")
 

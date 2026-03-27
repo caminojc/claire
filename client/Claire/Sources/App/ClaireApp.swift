@@ -8,6 +8,15 @@ struct ClaireApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(callManager)
+                #if os(macOS)
+                .onAppear {
+                    // Set dock icon from bundle
+                    if let iconPath = Bundle.main.path(forResource: "AppIcon", ofType: "icns"),
+                       let icon = NSImage(contentsOfFile: iconPath) {
+                        NSApp.applicationIconImage = icon
+                    }
+                }
+                #endif
         }
     }
 }
