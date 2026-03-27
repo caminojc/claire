@@ -36,7 +36,8 @@ targets:
           cp -f "${PROJECT_DIR}/Claire/Resources/"*.zip "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
           cp -f "${PROJECT_DIR}/Claire/Resources/"*.json "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
           cp -f "${PROJECT_DIR}/Claire/Resources/"*.mp3 "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
-          echo "Copied model files to ${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/"
+          cp -f "${PROJECT_DIR}/Claire/Resources/AppIcon.icns" "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
+          echo "Copied model files + icon to ${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.caminojc.claire
@@ -45,6 +46,8 @@ targets:
         CURRENT_PROJECT_VERSION: 1
         GENERATE_INFOPLIST_FILE: true
         INFOPLIST_KEY_CFBundleDisplayName: Claire
+        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+        INFOPLIST_KEY_CFBundleIconFile: AppIcon
         INFOPLIST_KEY_NSMicrophoneUsageDescription: "Claire needs access to your microphone for voice conversations."
         CODE_SIGN_ENTITLEMENTS: Claire/Resources/Claire.entitlements
         INFOPLIST_KEY_UILaunchScreen_Generation: true

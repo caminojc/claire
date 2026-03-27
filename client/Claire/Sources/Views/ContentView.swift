@@ -271,18 +271,7 @@ struct BottomBar: View {
                     }
                     .buttonStyle(.plain)
 
-                    // Speaker
-                    Button(action: { callManager.toggleSpeaker() }) {
-                        ZStack {
-                            Circle()
-                                .fill(.ultraThinMaterial.opacity(0.5))
-                                .frame(width: 46, height: 46)
-                            Image(systemName: callManager.isSpeakerOn ? "speaker.wave.3.fill" : "speaker.wave.2.fill")
-                                .font(.system(size: 17))
-                                .foregroundStyle(.white.opacity(0.8))
-                        }
-                    }
-                    .buttonStyle(.plain)
+                    // (speaker button removed)
                 }
                 .padding(.horizontal, 4)
             }

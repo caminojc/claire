@@ -216,7 +216,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "mkdir -p \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources\"\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.dat \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.smpl \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.zip \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.json \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.mp3 \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\necho \"Copied model files to ${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\"\n";
+			shellScript = "mkdir -p \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources\"\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.dat \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.smpl \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.zip \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.json \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.mp3 \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/AppIcon.icns\" \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\necho \"Copied model files + icon to ${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\"\n";
 		};
 		D3B73E87957D0CCE395EA2E6 /* Copy Model Files */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -234,7 +234,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "mkdir -p \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources\"\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.dat \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.smpl \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.zip \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.json \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.mp3 \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\necho \"Copied model files to ${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\"\n";
+			shellScript = "mkdir -p \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources\"\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.dat \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.smpl \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.zip \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.json \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.mp3 \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/AppIcon.icns\" \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\necho \"Copied model files + icon to ${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -328,7 +328,7 @@
 		24A2921BD58D0F4E0BD637E2 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CODE_SIGN_ENTITLEMENTS = Claire/Resources/Claire.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -337,6 +337,7 @@
 				HEADER_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop $(PROJECT_DIR)/native";
 				INFOPLIST_GENERATION_MODE = GeneratedFile;
 				INFOPLIST_KEY_CFBundleDisplayName = Claire;
+				INFOPLIST_KEY_CFBundleIconFile = AppIcon;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Claire needs access to your microphone for voice conversations.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -359,7 +360,7 @@
 		8C6242F50BE6DB4C9B2DD553 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CODE_SIGN_ENTITLEMENTS = Claire/Resources/Claire.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -368,6 +369,7 @@
 				HEADER_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop $(PROJECT_DIR)/native";
 				INFOPLIST_GENERATION_MODE = GeneratedFile;
 				INFOPLIST_KEY_CFBundleDisplayName = Claire;
+				INFOPLIST_KEY_CFBundleIconFile = AppIcon;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Claire needs access to your microphone for voice conversations.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -455,7 +457,7 @@
 		B91945E73279631E2AED305D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CODE_SIGN_ENTITLEMENTS = Claire/Resources/Claire.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -464,6 +466,7 @@
 				HEADER_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop $(PROJECT_DIR)/native";
 				INFOPLIST_GENERATION_MODE = GeneratedFile;
 				INFOPLIST_KEY_CFBundleDisplayName = Claire;
+				INFOPLIST_KEY_CFBundleIconFile = AppIcon;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Claire needs access to your microphone for voice conversations.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -486,7 +489,7 @@
 		BEB5CF55ECF750D26ED668E6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CODE_SIGN_ENTITLEMENTS = Claire/Resources/Claire.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -495,6 +498,7 @@
 				HEADER_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop $(PROJECT_DIR)/native";
 				INFOPLIST_GENERATION_MODE = GeneratedFile;
 				INFOPLIST_KEY_CFBundleDisplayName = Claire;
+				INFOPLIST_KEY_CFBundleIconFile = AppIcon;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Claire needs access to your microphone for voice conversations.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
