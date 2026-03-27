@@ -8,8 +8,9 @@ enum CallState {
     case disconnecting
 }
 
-/// Manages Claire voice call lifecycle.
-/// Uses AVAudioEngine + SMPL AFE for audio, WebSocket for server communication.
+/// Claire voice call manager.
+/// Uses Zipper SDK (via ClaireAudioBridge) for audio with full AFE.
+/// PortAudio on macOS, CoreAudio on iOS.
 @MainActor
 class CallManager: ObservableObject {
     @Published var state: CallState = .idle
@@ -25,20 +26,25 @@ class CallManager: ObservableObject {
     private var callTimer: Timer?
     private var callStartTime: Date?
     private let webSocketClient = ClaireWebSocketClient()
-    private let audioManager = AudioManager()
+    private var audioBridge: ClaireAudioBridge?
+    private let bridgeDelegate = BridgeDelegateAdapter()
     private var conversationHistory: [[String: String]] = []
     private var currentLlmResponse: String = ""
     private var sessionUuid: String = ""
+    private var pendingPayloads: [Int32: Data] = [:]
+    private var currentStreamId: Int32 = 0
 
     var formattedDuration: String {
-        let minutes = Int(callDuration) / 60
-        let seconds = Int(callDuration) % 60
-        return String(format: "%d:%02d", minutes, seconds)
+        let m = Int(callDuration) / 60, s = Int(callDuration) % 60
+        return String(format: "%d:%02d", m, s)
     }
 
     init() {
         webSocketClient.delegate = self
+        bridgeDelegate.callManager = self
     }
+
+    // MARK: - Call Lifecycle
 
     func startCall() {
         state = .connecting
@@ -47,14 +53,21 @@ class CallManager: ObservableObject {
         conversationHistory = [
             ["role": "prompt", "content": "You are Claire, a helpful voice agent."]
         ]
-        audioManager.configureAudioSession()
+
+        // Init Zipper SDK with model directory
+        let modelDir = Bundle.main.resourcePath ?? ""
+        print("[Call] Init Zipper SDK with models at: \(modelDir)")
+        audioBridge = ClaireAudioBridge(modelDirectory: modelDir)
+        audioBridge?.delegate = bridgeDelegate
+
         webSocketClient.connect()
     }
 
     func endCall() {
         state = .disconnecting
         stopTimer()
-        audioManager.stopCapture()
+        audioBridge?.stop()
+        audioBridge = nil
         webSocketClient.disconnect()
         state = .idle
         callDuration = 0
@@ -63,41 +76,61 @@ class CallManager: ObservableObject {
         statusMessage = ""
         conversationHistory = []
         currentLlmResponse = ""
+        pendingPayloads = [:]
     }
 
     func sendText() {
         let text = textInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         textInput = ""
-
         conversationHistory.append(["role": "user", "content": text])
         statusMessage = "You: \(text)"
         currentLlmResponse = ""
-
-        // Send as a text-only payload (empty audio, just messages)
-        let uuid = UUID().uuidString
-        webSocketClient.sendAudio(uuid: uuid, audioData: Data(), messages: conversationHistory)
-        print("[Call] Sent text: \(text)")
+        webSocketClient.sendAudio(uuid: UUID().uuidString, audioData: Data(), messages: conversationHistory)
     }
 
     func toggleMute() {
         isMuted.toggle()
-        audioManager.setMuted(isMuted)
+        audioBridge?.muteMic(isMuted)
     }
 
-    func toggleSpeaker() {
-        isSpeakerOn.toggle()
-        audioManager.setSpeakerEnabled(isSpeakerOn)
+    func toggleSpeaker() { isSpeakerOn.toggle() }
+
+    // MARK: - Zipper SDK Callbacks
+
+    func handleEncodedPayload(_ data: Data, startTimeMs: Int32, timeMs: Int32) {
+        pendingPayloads[timeMs] = data
+        print("[Call] Encoded: \(data.count)b id=\(timeMs)")
     }
+
+    func handleSegmentFinished(timeMs: Int32) {
+        guard let payload = pendingPayloads[timeMs] else { return }
+        pendingPayloads.removeAll()
+        currentStreamId = timeMs
+        currentLlmResponse = ""
+        print("[Call] Segment done: \(payload.count)b → server")
+        webSocketClient.sendAudio(uuid: UUID().uuidString, audioData: payload, messages: conversationHistory)
+    }
+
+    func handleSegmentCancelled(timeMs: Int32) {
+        pendingPayloads.removeValue(forKey: timeMs)
+    }
+
+    func handleUserSpeechChanged(_ active: Bool) {
+        isSpeaking = active
+        if active { statusMessage = "Listening..." }
+    }
+
+    // MARK: - Timer
 
     private func startTimer() {
         callStartTime = Date()
         callTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                guard let self = self, let start = self.callStartTime else { return }
+                guard let self, let start = self.callStartTime else { return }
                 self.callDuration = Date().timeIntervalSince(start)
-                self.userLevel = self.audioManager.userSpeechLevel
-                self.streamingLevel = self.audioManager.playoutLevel
+                self.userLevel = self.audioBridge?.userSpeechLevel ?? 0
+                self.streamingLevel = self.audioBridge?.streamingLevel ?? 0
             }
         }
     }
@@ -109,46 +142,17 @@ class CallManager: ObservableObject {
     }
 }
 
-// MARK: - WebSocket Delegate
+// MARK: - WebSocket
 
 extension CallManager: ClaireWebSocketDelegate {
     nonisolated func didConnect() {
         Task { @MainActor in
             state = .connected
             startTimer()
-
+            // PCM16 16kHz — server STT expects PCM, not mel
             webSocketClient.sendConfig(uuid: sessionUuid, codecUpstream: "pcm16_16kHz")
-
-            // Play startup chime to initialize audio
-            if let chimePath = Bundle.main.path(forResource: "hello_claire", ofType: "mp3") {
-                audioManager.playFile(URL(fileURLWithPath: chimePath))
-            }
-
-            audioManager.onStatusMessage = { [weak self] msg in
-                Task { @MainActor in self?.statusMessage = msg }
-            }
-
-            audioManager.onSpeechSegment = { [weak self] segment in
-                Task { @MainActor in
-                    guard let self = self else { return }
-                    let uuid = UUID().uuidString
-                    self.currentLlmResponse = ""
-                    print("[Call] Sending \(segment.count) bytes (\(String(format: "%.1f", Double(segment.count) / 32000.0))s)")
-                    self.webSocketClient.sendAudio(uuid: uuid, audioData: segment, messages: self.conversationHistory)
-                }
-            }
-
-            audioManager.onVADStateChanged = { [weak self] speaking in
-                Task { @MainActor in
-                    self?.isSpeaking = speaking
-                    if speaking {
-                        self?.statusMessage = "Listening..."
-                        self?.audioManager.interruptPlayback()
-                    }
-                }
-            }
-
-            audioManager.startCapture()
+            // Start Zipper SDK audio (PortAudio + AFE + VAD) with PCM16 encoder
+            audioBridge?.start(withEncoderType: 2) // ENC_PCM16_16KHZ
             statusMessage = "Ready — speak to Claire"
         }
     }
@@ -156,7 +160,7 @@ extension CallManager: ClaireWebSocketDelegate {
     nonisolated func didDisconnect() {
         Task { @MainActor in
             if state != .idle {
-                audioManager.stopCapture()
+                audioBridge?.stop()
                 state = .idle
                 stopTimer()
                 statusMessage = "Disconnected"
@@ -172,46 +176,64 @@ extension CallManager: ClaireWebSocketDelegate {
 
             switch type {
             case "stt_text_result_response":
-                if let sttText = json["stt_text_result"] as? String, !sttText.isEmpty {
-                    statusMessage = "You: \(sttText)"
-                    conversationHistory.append(["role": "user", "content": sttText])
+                if let stt = json["stt_text_result"] as? String, !stt.isEmpty {
+                    statusMessage = "You: \(stt)"
+                    conversationHistory.append(["role": "user", "content": stt])
                     currentLlmResponse = ""
                 }
             case "llm_completion_result_response":
-                if let chunk = json["llm_completion_result"] as? [String: Any],
-                   let choices = chunk["choices"] as? [[String: Any]],
-                   let delta = choices.first?["delta"] as? [String: Any],
-                   let content = delta["content"] as? String {
-                    currentLlmResponse += content
-                    let display = currentLlmResponse.prefix(120)
-                    statusMessage = "Claire: \(display)\(currentLlmResponse.count > 120 ? "..." : "")"
+                if let c = json["llm_completion_result"] as? [String: Any],
+                   let ch = c["choices"] as? [[String: Any]],
+                   let d = ch.first?["delta"] as? [String: Any],
+                   let t = d["content"] as? String {
+                    currentLlmResponse += t
+                    statusMessage = "Claire: \(currentLlmResponse.prefix(120))\(currentLlmResponse.count > 120 ? "..." : "")"
                 }
-                if let chunk = json["llm_completion_result"] as? [String: Any],
-                   let choices = chunk["choices"] as? [[String: Any]],
-                   let finishReason = choices.first?["finish_reason"] as? String,
-                   finishReason == "stop",
+                if let c = json["llm_completion_result"] as? [String: Any],
+                   let ch = c["choices"] as? [[String: Any]],
+                   let fr = ch.first?["finish_reason"] as? String, fr == "stop",
                    !currentLlmResponse.isEmpty {
                     conversationHistory.append(["role": "assistant", "content": currentLlmResponse])
                 }
             case "tts_audio_result_response":
-                if let audioB64 = json["audio_base64"] as? String,
-                   let audioData = Data(base64Encoded: audioB64) {
-                    print("[Call] TTS audio: \(audioData.count) bytes")
-                    audioManager.playAudio(pcmData: audioData)
+                if let b64 = json["audio_base64"] as? String,
+                   let audio = Data(base64Encoded: b64) {
+                    print("[Call] TTS: \(audio.count)b → Zipper playout")
+                    // Feed to Zipper SDK for playout (with AEC reference)
+                    audioBridge?.addStreamingData(audio, streamId: currentStreamId,
+                                                  decoderFormat: 2, isEnd: false) // DEC_PCM16_24KHZ=2
                 }
             case "config_response":
-                print("[Call] Config acknowledged")
+                print("[Call] Config OK")
             case "error_response":
-                let msg = json["message"] as? String ?? "Unknown error"
-                statusMessage = "Error: \(msg)"
-            default:
-                break
+                statusMessage = "Error: \(json["message"] as? String ?? "unknown")"
+            default: break
             }
         }
     }
 
     nonisolated func didReceiveBinary(_ data: Data) {
-        // Ignore binary frames for now (protobuf TTS — not used in this path)
-        print("[Call] Received binary frame: \(data.count) bytes (ignored)")
+        print("[Call] Binary: \(data.count)b (ignored)")
     }
+}
+
+// MARK: - Bridge Delegate
+
+class BridgeDelegateAdapter: NSObject, ClaireAudioBridgeDelegate {
+    weak var callManager: CallManager?
+
+    func onEncodedPayload(_ data: Data, startTimeMs: Int32, timeMs: Int32) {
+        Task { @MainActor in callManager?.handleEncodedPayload(data, startTimeMs: startTimeMs, timeMs: timeMs) }
+    }
+    func onSegmentFinished(_ timeMs: Int32) {
+        Task { @MainActor in callManager?.handleSegmentFinished(timeMs: timeMs) }
+    }
+    func onSegmentCancelled(_ timeMs: Int32) {
+        Task { @MainActor in callManager?.handleSegmentCancelled(timeMs: timeMs) }
+    }
+    func onUserSpeechChanged(_ active: Bool) {
+        Task { @MainActor in callManager?.handleUserSpeechChanged(active) }
+    }
+    func onStreamingStarted(_ streamId: Int32) {}
+    func onStreamingStopped(_ streamId: Int32, timeMs: Int32) {}
 }

@@ -12,14 +12,17 @@
 		3B592346E2194FAA17793CEE /* ClaireApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2E199F0E82EFF8E5F1B3BAC /* ClaireApp.swift */; };
 		5D9AAFEFFEAD6C8C4ACE6092 /* ClaireWebSocketClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC285F694314EEF342F8C18 /* ClaireWebSocketClient.swift */; };
 		701250F13C457B2C160D58BB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC2F2107C5CC233F9B5A2BF /* ContentView.swift */; };
+		7AC9A6C76C9461D12B3A61F4 /* ClaireAudioBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0B86ED40B027F35E7A4C5621 /* ClaireAudioBridge.mm */; settings = {COMPILER_FLAGS = "-x objective-c++ -std=c++17 -w"; }; };
 		7B486BB052C6267D8B369038 /* CallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 232F6D7BA4161E6F4BA28D88 /* CallManager.swift */; };
 		8062472A0AB2A8815343A93B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC2F2107C5CC233F9B5A2BF /* ContentView.swift */; };
 		858348AA86A1CC26329997EC /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 861F0626A1653E95C9DF4A75 /* AudioManager.swift */; };
+		A7A3D40FE19A261C2D64640D /* ClaireAudioBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0B86ED40B027F35E7A4C5621 /* ClaireAudioBridge.mm */; settings = {COMPILER_FLAGS = "-x objective-c++ -std=c++17 -w"; }; };
 		ABC4325A15ADB3CB588C4CD7 /* ClaireWebSocketClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC285F694314EEF342F8C18 /* ClaireWebSocketClient.swift */; };
 		B88FB41897417FAB09B384E5 /* CallManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 232F6D7BA4161E6F4BA28D88 /* CallManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0B86ED40B027F35E7A4C5621 /* ClaireAudioBridge.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = ClaireAudioBridge.mm; sourceTree = "<group>"; };
 		232F6D7BA4161E6F4BA28D88 /* CallManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallManager.swift; sourceTree = "<group>"; };
 		5CC285F694314EEF342F8C18 /* ClaireWebSocketClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaireWebSocketClient.swift; sourceTree = "<group>"; };
 		6915B52E476B609357A44DA5 /* Claire-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Claire-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -28,6 +31,7 @@
 		A2E199F0E82EFF8E5F1B3BAC /* ClaireApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaireApp.swift; sourceTree = "<group>"; };
 		ACC2F2107C5CC233F9B5A2BF /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AD05245FE411202B460B93B3 /* Claire.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Claire.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D8BB70E732EFD8C30AAA7FC4 /* ClaireAudioBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ClaireAudioBridge.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -43,6 +47,8 @@
 			isa = PBXGroup;
 			children = (
 				6915B52E476B609357A44DA5 /* Claire-Bridging-Header.h */,
+				D8BB70E732EFD8C30AAA7FC4 /* ClaireAudioBridge.h */,
+				0B86ED40B027F35E7A4C5621 /* ClaireAudioBridge.mm */,
 			);
 			path = Native;
 			sourceTree = "<group>";
@@ -199,6 +205,7 @@
 				858348AA86A1CC26329997EC /* AudioManager.swift in Sources */,
 				B88FB41897417FAB09B384E5 /* CallManager.swift in Sources */,
 				3B592346E2194FAA17793CEE /* ClaireApp.swift in Sources */,
+				7AC9A6C76C9461D12B3A61F4 /* ClaireAudioBridge.mm in Sources */,
 				ABC4325A15ADB3CB588C4CD7 /* ClaireWebSocketClient.swift in Sources */,
 				8062472A0AB2A8815343A93B /* ContentView.swift in Sources */,
 			);
@@ -211,6 +218,7 @@
 				049CFFAF5E0CB7AA7E6C7B21 /* AudioManager.swift in Sources */,
 				7B486BB052C6267D8B369038 /* CallManager.swift in Sources */,
 				205562702B696EF18FCC7DE8 /* ClaireApp.swift in Sources */,
+				A7A3D40FE19A261C2D64640D /* ClaireAudioBridge.mm in Sources */,
 				5D9AAFEFFEAD6C8C4ACE6092 /* ClaireWebSocketClient.swift in Sources */,
 				701250F13C457B2C160D58BB /* ContentView.swift in Sources */,
 			);
@@ -284,9 +292,8 @@
 				CODE_SIGN_ENTITLEMENTS = Claire/Resources/Claire.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Frameworks/SMPLAudioProcessing.xcframework/macos-arm64";
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Frameworks/SMPLAudioProcessing.xcframework/macos-arm64/Headers";
+				HEADER_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop $(PROJECT_DIR)/native";
 				INFOPLIST_GENERATION_MODE = GeneratedFile;
 				INFOPLIST_KEY_CFBundleDisplayName = Claire;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Claire needs access to your microphone for voice conversations.";
@@ -297,9 +304,9 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Frameworks/SMPLAudioProcessing.xcframework/macos-arm64";
+				LIBRARY_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
 				MARKETING_VERSION = 0.1.0;
-				OTHER_LDFLAGS = "-lSMPLAudioProcessingMerged -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit";
+				OTHER_LDFLAGS = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
 				PRODUCT_BUNDLE_IDENTIFIER = com.caminojc.claire;
 				PRODUCT_NAME = Claire;
 				SDKROOT = macosx;
@@ -316,9 +323,8 @@
 				CODE_SIGN_ENTITLEMENTS = Claire/Resources/Claire.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Frameworks/SMPLAudioProcessing.xcframework/macos-arm64";
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Frameworks/SMPLAudioProcessing.xcframework/macos-arm64/Headers";
+				HEADER_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop $(PROJECT_DIR)/native";
 				INFOPLIST_GENERATION_MODE = GeneratedFile;
 				INFOPLIST_KEY_CFBundleDisplayName = Claire;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Claire needs access to your microphone for voice conversations.";
@@ -329,9 +335,9 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Frameworks/SMPLAudioProcessing.xcframework/macos-arm64";
+				LIBRARY_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
 				MARKETING_VERSION = 0.1.0;
-				OTHER_LDFLAGS = "-lSMPLAudioProcessingMerged -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit";
+				OTHER_LDFLAGS = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
 				PRODUCT_BUNDLE_IDENTIFIER = com.caminojc.claire;
 				PRODUCT_NAME = Claire;
 				SDKROOT = iphoneos;
@@ -413,9 +419,8 @@
 				CODE_SIGN_ENTITLEMENTS = Claire/Resources/Claire.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Frameworks/SMPLAudioProcessing.xcframework/macos-arm64";
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Frameworks/SMPLAudioProcessing.xcframework/macos-arm64/Headers";
+				HEADER_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop $(PROJECT_DIR)/native";
 				INFOPLIST_GENERATION_MODE = GeneratedFile;
 				INFOPLIST_KEY_CFBundleDisplayName = Claire;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Claire needs access to your microphone for voice conversations.";
@@ -426,9 +431,9 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Frameworks/SMPLAudioProcessing.xcframework/macos-arm64";
+				LIBRARY_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
 				MARKETING_VERSION = 0.1.0;
-				OTHER_LDFLAGS = "-lSMPLAudioProcessingMerged -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit";
+				OTHER_LDFLAGS = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
 				PRODUCT_BUNDLE_IDENTIFIER = com.caminojc.claire;
 				PRODUCT_NAME = Claire;
 				SDKROOT = macosx;
@@ -445,9 +450,8 @@
 				CODE_SIGN_ENTITLEMENTS = Claire/Resources/Claire.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Frameworks/SMPLAudioProcessing.xcframework/macos-arm64";
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Frameworks/SMPLAudioProcessing.xcframework/macos-arm64/Headers";
+				HEADER_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop $(PROJECT_DIR)/native";
 				INFOPLIST_GENERATION_MODE = GeneratedFile;
 				INFOPLIST_KEY_CFBundleDisplayName = Claire;
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Claire needs access to your microphone for voice conversations.";
@@ -458,9 +462,9 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Frameworks/SMPLAudioProcessing.xcframework/macos-arm64";
+				LIBRARY_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
 				MARKETING_VERSION = 0.1.0;
-				OTHER_LDFLAGS = "-lSMPLAudioProcessingMerged -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit";
+				OTHER_LDFLAGS = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
 				PRODUCT_BUNDLE_IDENTIFIER = com.caminojc.claire;
 				PRODUCT_NAME = Claire;
 				SDKROOT = iphoneos;

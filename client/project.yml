@@ -18,6 +18,11 @@ targets:
     platform: [iOS, macOS]
     sources:
       - path: Claire/Sources
+        excludes:
+          - "**/*.mm"
+      - path: Claire/Sources/Native/ClaireAudioBridge.mm
+        buildPhase: sources
+        compilerFlags: ["-x", "objective-c++", "-std=c++17", "-w"]
     resources:
       - path: Claire/Resources
     settings:
@@ -33,14 +38,13 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
-        # C++ / ObjC++ bridging
+        # C++ bridging
         SWIFT_OBJC_BRIDGING_HEADER: Claire/Sources/Native/Claire-Bridging-Header.h
         CLANG_CXX_LANGUAGE_STANDARD: c++17
-        # Frameworks and libraries
-        FRAMEWORK_SEARCH_PATHS: "$(inherited) $(PROJECT_DIR)/Frameworks/SMPLAudioProcessing.xcframework/macos-arm64"
-        HEADER_SEARCH_PATHS: "$(inherited) $(PROJECT_DIR)/Frameworks/SMPLAudioProcessing.xcframework/macos-arm64/Headers"
-        LIBRARY_SEARCH_PATHS: "$(inherited) $(PROJECT_DIR)/Frameworks/SMPLAudioProcessing.xcframework/macos-arm64"
-        OTHER_LDFLAGS: "-lSMPLAudioProcessingMerged -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit"
+        # Native SMPL libraries (Zipper SDK + AFE + codecs + PortAudio)
+        LIBRARY_SEARCH_PATHS: "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64"
+        HEADER_SEARCH_PATHS: "$(inherited) $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop $(PROJECT_DIR)/native"
+        OTHER_LDFLAGS: "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation"
       configs:
         Debug:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
