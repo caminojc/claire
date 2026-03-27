@@ -130,8 +130,8 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = C51F5349F4EF3DF13268E2C4 /* Build configuration list for PBXNativeTarget "Claire_macOS" */;
 			buildPhases = (
-				DFFC596298EA1048730F2948 /* Sources */,
 				ADA8BFCF0506DACE14BEB6BB /* Copy Model Files */,
+				DFFC596298EA1048730F2948 /* Sources */,
 			);
 			buildRules = (
 			);
@@ -148,8 +148,8 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = AF514561FAFA5AE8D5D7D906 /* Build configuration list for PBXNativeTarget "Claire_iOS" */;
 			buildPhases = (
-				6193014BFE21C5D64296AE88 /* Sources */,
 				D3B73E87957D0CCE395EA2E6 /* Copy Model Files */,
+				6193014BFE21C5D64296AE88 /* Sources */,
 			);
 			buildRules = (
 			);
@@ -216,7 +216,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "mkdir -p \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources\"\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.dat \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.smpl \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.zip \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.json \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.mp3 \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/AppIcon.icns\" \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\necho \"Copied model files + icon to ${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\"\n";
+			shellScript = "mkdir -p \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources\"\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.dat \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.smpl \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.zip \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.json \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.mp3 \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.icns \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\n";
 		};
 		D3B73E87957D0CCE395EA2E6 /* Copy Model Files */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -234,7 +234,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "mkdir -p \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources\"\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.dat \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.smpl \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.zip \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.json \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.mp3 \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/AppIcon.icns\" \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\necho \"Copied model files + icon to ${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\"\n";
+			shellScript = "mkdir -p \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources\"\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.dat \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.smpl \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.zip \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.json \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.mp3 \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\ncp -f \"${PROJECT_DIR}/Claire/Resources/\"*.icns \"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/\" 2>/dev/null || true\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

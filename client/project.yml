@@ -27,7 +27,7 @@ targets:
       - path: Claire/Resources
         includes:
           - "**/*"
-    postBuildScripts:
+    preBuildScripts:
       - name: Copy Model Files
         script: |
           mkdir -p "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources"
@@ -36,8 +36,7 @@ targets:
           cp -f "${PROJECT_DIR}/Claire/Resources/"*.zip "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
           cp -f "${PROJECT_DIR}/Claire/Resources/"*.json "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
           cp -f "${PROJECT_DIR}/Claire/Resources/"*.mp3 "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
-          cp -f "${PROJECT_DIR}/Claire/Resources/AppIcon.icns" "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
-          echo "Copied model files + icon to ${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/"
+          cp -f "${PROJECT_DIR}/Claire/Resources/"*.icns "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.caminojc.claire

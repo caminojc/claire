@@ -5,303 +5,271 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            AudioEnergyBackground()
+            // Dynamic background
+            ClaireBackground()
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                TopBar()
-                    .padding(.top, 16)
+                if callManager.state == .connected {
+                    // Conversation
+                    ConversationView()
+                        .padding(.top, 8)
 
-                Spacer()
+                    Spacer(minLength: 0)
 
-                CenterContent()
+                    // Call controls
+                    CallControls()
+                        .padding(.bottom, 8)
+                } else {
+                    Spacer()
+                    LandingView()
+                    Spacer()
+                }
 
-                Spacer()
-
-                BottomBar()
+                // Text input (always visible)
+                TextInputBar()
+                    .padding(.horizontal, 16)
                     .padding(.bottom, 12)
             }
-            .padding(.horizontal, 20)
         }
         .preferredColorScheme(.dark)
         #if os(macOS)
-        .frame(minWidth: 380, idealWidth: 420, minHeight: 600, idealHeight: 720)
+        .frame(minWidth: 400, idealWidth: 440, minHeight: 640, idealHeight: 740)
         #endif
     }
 }
 
-// MARK: - Center Content
+// MARK: - Background
 
-struct CenterContent: View {
+struct ClaireBackground: View {
     @EnvironmentObject var callManager: CallManager
 
     var body: some View {
-        if callManager.state == .idle {
-            IdleView()
-        } else if callManager.state == .connecting {
-            VStack(spacing: 16) {
-                ProgressView()
-                    .scaleEffect(1.2)
-                    .tint(.white.opacity(0.6))
-                Text("Connecting...")
-                    .font(.system(size: 16, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.5))
-            }
-        } else {
-            // Scrolling conversation
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 10) {
-                        ForEach(callManager.messages) { msg in
-                            HStack {
-                                if msg.role == "user" { Spacer() }
-                                Text(msg.text)
-                                    .font(.system(size: 15, design: .rounded))
-                                    .foregroundStyle(.white.opacity(msg.role == "user" ? 0.9 : 0.75))
-                                    .textSelection(.enabled)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 8)
-                                    .background(
-                                        msg.role == "user"
-                                            ? Color(red: 0.16, green: 0.38, blue: 1.0).opacity(0.4)
-                                            : Color.white.opacity(0.08)
-                                    )
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                                if msg.role == "assistant" { Spacer() }
-                            }
-                            .id(msg.id)
-                        }
+        TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { timeline in
+            Canvas { ctx, size in
+                let t = timeline.date.timeIntervalSinceReferenceDate
+                ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(white: 0.03)))
 
-                        if callManager.isSpeaking {
-                            HStack {
-                                Spacer()
-                                Text("...")
-                                    .font(.system(size: 15, design: .rounded))
-                                    .foregroundStyle(.white.opacity(0.4))
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 8)
-                                    .background(Color(red: 0.16, green: 0.38, blue: 1.0).opacity(0.2))
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 16)
+                guard callManager.state == .connected else {
+                    // Idle: subtle slow pulse
+                    let p = CGFloat(sin(t * 0.4) * 0.02 + 0.04)
+                    let g = Gradient(colors: [Color(red: 0.12, green: 0.14, blue: 0.35).opacity(p), .clear])
+                    ctx.fill(Path(ellipseIn: CGRect(x: size.width * 0.15, y: size.height * 0.25,
+                        width: size.width * 0.7, height: size.height * 0.5)),
+                        with: .radialGradient(g, center: CGPoint(x: size.width * 0.5, y: size.height * 0.4),
+                            startRadius: 0, endRadius: size.width * 0.45))
+                    return
                 }
-                .onChange(of: callManager.messages.count) { _ in
-                    if let last = callManager.messages.last {
-                        withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
-                    }
-                }
-            }
-        }
-    }
-}
 
-// MARK: - Audio Energy Background
+                let mic = CGFloat(callManager.userLevel)
+                let tts = CGFloat(callManager.streamingLevel)
 
-struct AudioEnergyBackground: View {
-    @EnvironmentObject var callManager: CallManager
-
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
-            Canvas { context, size in
-                let time = timeline.date.timeIntervalSinceReferenceDate
-                context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(white: 0.04)))
-
-                if callManager.state == .connected {
-                    let micLevel = CGFloat(callManager.userLevel)
-                    let ttsLevel = CGFloat(callManager.streamingLevel)
-
-                    // Mic energy: cool blue from bottom
-                    let micIntensity = callManager.isSpeaking ? max(micLevel, 0.25) : micLevel * 0.5
-                    if micIntensity > 0.01 {
-                        let r = size.width * (0.4 + micIntensity * 0.4)
-                        let p = CGFloat(sin(time * 3.5) * 0.08 + 0.92)
-                        let cx = size.width * 0.35
-                        let cy = size.height * 0.75
-                        let grad = Gradient(colors: [
-                            Color(red: 0.16, green: 0.38, blue: 1.0).opacity(micIntensity * p * 0.45),
-                            Color(red: 0.08, green: 0.22, blue: 0.7).opacity(micIntensity * p * 0.2),
-                            Color.clear,
-                        ])
-                        context.fill(
-                            Path(ellipseIn: CGRect(x: cx - r, y: cy - r, width: r * 2, height: r * 2)),
-                            with: .radialGradient(grad, center: CGPoint(x: cx, y: cy), startRadius: 0, endRadius: r)
-                        )
-                    }
-
-                    // TTS energy: warm amber from top-right
-                    if ttsLevel > 0.01 {
-                        let r = size.width * (0.35 + ttsLevel * 0.5)
-                        let p = CGFloat(sin(time * 2.8 + 1.2) * 0.08 + 0.92)
-                        let cx = size.width * 0.7
-                        let cy = size.height * 0.28
-                        let grad = Gradient(colors: [
-                            Color(red: 1.0, green: 0.65, blue: 0.15).opacity(ttsLevel * p * 0.4),
-                            Color(red: 0.8, green: 0.45, blue: 0.08).opacity(ttsLevel * p * 0.18),
-                            Color.clear,
-                        ])
-                        context.fill(
-                            Path(ellipseIn: CGRect(x: cx - r, y: cy - r, width: r * 2, height: r * 2)),
-                            with: .radialGradient(grad, center: CGPoint(x: cx, y: cy), startRadius: 0, endRadius: r)
-                        )
-                    }
-                } else {
-                    // Idle: very subtle breathing glow
-                    let breath = CGFloat(sin(time * 0.6) * 0.015 + 0.045)
-                    let grad = Gradient(colors: [
-                        Color(red: 0.16, green: 0.2, blue: 0.4).opacity(breath),
-                        Color.clear,
+                // User speech: blue, bottom-center
+                if mic > 0.02 || callManager.isSpeaking {
+                    let i = callManager.isSpeaking ? max(mic, 0.2) : mic * 0.3
+                    let r = size.width * (0.25 + i * 0.4)
+                    let p = CGFloat(sin(t * 4) * 0.06 + 0.94)
+                    let g = Gradient(colors: [
+                        Color(red: 0.2, green: 0.4, blue: 1.0).opacity(i * p * 0.5),
+                        Color(red: 0.1, green: 0.25, blue: 0.8).opacity(i * p * 0.2),
+                        .clear
                     ])
-                    let r = size.width * 0.5
-                    let cx = size.width * 0.5
-                    let cy = size.height * 0.4
-                    context.fill(
-                        Path(ellipseIn: CGRect(x: cx - r, y: cy - r, width: r * 2, height: r * 1.4)),
-                        with: .radialGradient(grad, center: CGPoint(x: cx, y: cy), startRadius: 0, endRadius: r)
-                    )
+                    let c = CGPoint(x: size.width * 0.5, y: size.height * 0.8)
+                    ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
+                        with: .radialGradient(g, center: c, startRadius: 0, endRadius: r))
+                }
+
+                // Claire speaking: warm gold, top-center
+                if tts > 0.02 {
+                    let r = size.width * (0.3 + tts * 0.4)
+                    let p = CGFloat(sin(t * 2.5 + 1) * 0.06 + 0.94)
+                    let g = Gradient(colors: [
+                        Color(red: 1.0, green: 0.7, blue: 0.2).opacity(tts * p * 0.4),
+                        Color(red: 0.85, green: 0.5, blue: 0.1).opacity(tts * p * 0.15),
+                        .clear
+                    ])
+                    let c = CGPoint(x: size.width * 0.5, y: size.height * 0.2)
+                    ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2)),
+                        with: .radialGradient(g, center: c, startRadius: 0, endRadius: r))
                 }
             }
         }
     }
 }
 
-// MARK: - Top Bar
+// MARK: - Landing (Idle)
 
-struct TopBar: View {
+struct LandingView: View {
     @EnvironmentObject var callManager: CallManager
+    @State private var hover = false
 
     var body: some View {
-        HStack {
-            Spacer()
+        VStack(spacing: 20) {
             Text("Claire")
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .font(.system(size: 32, weight: .light, design: .rounded))
                 .foregroundStyle(.white.opacity(0.9))
-                .padding(.horizontal, 20)
-                .padding(.vertical, 9)
-                .background(.ultraThinMaterial.opacity(0.6))
-                .clipShape(Capsule())
-            Spacer()
-        }
-    }
-}
 
-// MARK: - Idle View
-
-struct IdleView: View {
-    @EnvironmentObject var callManager: CallManager
-    @State private var isHovering = false
-
-    var body: some View {
-        VStack(spacing: 16) {
             Button(action: { callManager.startCall() }) {
                 ZStack {
                     Circle()
-                        .fill(.white)
-                        .frame(width: 76, height: 76)
-                        .shadow(color: Color(red: 0.16, green: 0.38, blue: 1.0).opacity(isHovering ? 0.5 : 0.2), radius: isHovering ? 20 : 10)
+                        .fill(Color(red: 0.2, green: 0.45, blue: 1.0))
+                        .frame(width: 80, height: 80)
+                        .shadow(color: Color(red: 0.2, green: 0.45, blue: 1.0).opacity(hover ? 0.6 : 0.3), radius: hover ? 24 : 12)
 
                     Image(systemName: "phone.fill")
-                        .font(.system(size: 30, weight: .medium))
-                        .foregroundStyle(Color(red: 0.16, green: 0.38, blue: 1.0))
+                        .font(.system(size: 30))
+                        .foregroundStyle(.white)
                 }
             }
             .buttonStyle(.plain)
-            .onHover { isHovering = $0 }
-            .scaleEffect(isHovering ? 1.06 : 1.0)
-            .animation(.easeOut(duration: 0.15), value: isHovering)
+            .onHover { hover = $0 }
+            .scaleEffect(hover ? 1.08 : 1.0)
+            .animation(.easeOut(duration: 0.15), value: hover)
 
-            Text("Start a call")
-                .font(.system(size: 14, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.45))
+            Text("Tap to call")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.white.opacity(0.35))
         }
     }
 }
 
-// MARK: - Bottom Bar
+// MARK: - Conversation
 
-struct BottomBar: View {
+struct ConversationView: View {
     @EnvironmentObject var callManager: CallManager
 
     var body: some View {
-        VStack(spacing: 14) {
-            if callManager.state == .connected {
-                HStack(spacing: 16) {
-                    // Hangup
-                    Button(action: { callManager.endCall() }) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.red.opacity(0.9))
-                                .frame(width: 54, height: 54)
-                            Image(systemName: "phone.down.fill")
-                                .font(.system(size: 20, weight: .medium))
-                                .foregroundStyle(.white)
+        ScrollViewReader { proxy in
+            ScrollView(showsIndicators: false) {
+                LazyVStack(alignment: .leading, spacing: 8) {
+                    ForEach(callManager.messages) { msg in
+                        HStack(alignment: .bottom, spacing: 8) {
+                            if msg.role == "user" { Spacer(minLength: 60) }
+                            Text(msg.text)
+                                .font(.system(size: 14, design: .rounded))
+                                .foregroundStyle(.white.opacity(msg.role == "user" ? 0.95 : 0.8))
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 9)
+                                .background(
+                                    msg.role == "user"
+                                        ? Color(red: 0.2, green: 0.45, blue: 1.0).opacity(0.35)
+                                        : Color.white.opacity(0.06)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 18))
+                                .textSelection(.enabled)
+                            if msg.role == "assistant" { Spacer(minLength: 60) }
                         }
+                        .id(msg.id)
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
                     }
-                    .buttonStyle(.plain)
 
-                    // Timer
-                    Text(callManager.formattedDuration)
-                        .font(.system(size: 18, weight: .medium, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.7))
-                        .frame(width: 55, alignment: .leading)
-
-                    Spacer()
-
-                    // Mic
-                    Button(action: { callManager.toggleMute() }) {
-                        ZStack {
-                            Circle()
-                                .fill(.ultraThinMaterial.opacity(0.5))
-                                .frame(width: 46, height: 46)
-
-                            if callManager.isSpeaking && !callManager.isMuted {
-                                Circle()
-                                    .stroke(Color(red: 0.16, green: 0.5, blue: 1.0), lineWidth: 2)
-                                    .frame(width: 50, height: 50)
-                                    .transition(.scale.combined(with: .opacity))
+                    if callManager.isSpeaking {
+                        HStack {
+                            Spacer(minLength: 60)
+                            HStack(spacing: 4) {
+                                ForEach(0..<3) { i in
+                                    Circle()
+                                        .fill(Color(red: 0.2, green: 0.45, blue: 1.0).opacity(0.5))
+                                        .frame(width: 6, height: 6)
+                                }
                             }
-
-                            Image(systemName: callManager.isMuted ? "mic.slash.fill" : "mic.fill")
-                                .font(.system(size: 17))
-                                .foregroundStyle(callManager.isSpeaking && !callManager.isMuted
-                                    ? Color(red: 0.3, green: 0.6, blue: 1.0) : .white.opacity(0.8))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(Color(red: 0.2, green: 0.45, blue: 1.0).opacity(0.15))
+                            .clipShape(RoundedRectangle(cornerRadius: 18))
                         }
-                        .animation(.easeOut(duration: 0.15), value: callManager.isSpeaking)
                     }
-                    .buttonStyle(.plain)
-
-                    // (speaker button removed)
                 }
-                .padding(.horizontal, 4)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
             }
-
-            // Text input
-            HStack {
-                Image(systemName: "text.bubble")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.white.opacity(0.3))
-                TextField("Send a text", text: $callManager.textInput)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 15, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.8))
-                    .onSubmit {
-                        callManager.sendText()
-                    }
-                if !callManager.textInput.isEmpty {
-                    Button(action: { callManager.sendText() }) {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 22))
-                            .foregroundStyle(Color(red: 0.16, green: 0.38, blue: 1.0))
-                    }
-                    .buttonStyle(.plain)
+            .onChange(of: callManager.messages.count) { _ in
+                if let last = callManager.messages.last {
+                    withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(last.id, anchor: .bottom) }
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 11)
-            .background(.ultraThinMaterial.opacity(0.3))
-            .clipShape(RoundedRectangle(cornerRadius: 22))
         }
+    }
+}
+
+// MARK: - Call Controls
+
+struct CallControls: View {
+    @EnvironmentObject var callManager: CallManager
+
+    var body: some View {
+        HStack(spacing: 20) {
+            // End call
+            Button(action: { callManager.endCall() }) {
+                Image(systemName: "phone.down.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(.white)
+                    .frame(width: 50, height: 50)
+                    .background(Color.red.opacity(0.85))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+
+            // Timer
+            Text(callManager.formattedDuration)
+                .font(.system(size: 16, weight: .medium, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.5))
+
+            Spacer()
+
+            // Mic
+            Button(action: { callManager.toggleMute() }) {
+                ZStack {
+                    Circle()
+                        .fill(callManager.isMuted ? Color.red.opacity(0.3) : Color.white.opacity(0.08))
+                        .frame(width: 46, height: 46)
+
+                    if callManager.isSpeaking && !callManager.isMuted {
+                        Circle()
+                            .stroke(Color(red: 0.2, green: 0.45, blue: 1.0).opacity(0.7), lineWidth: 2)
+                            .frame(width: 50, height: 50)
+                    }
+
+                    Image(systemName: callManager.isMuted ? "mic.slash.fill" : "mic.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(callManager.isSpeaking && !callManager.isMuted
+                            ? Color(red: 0.3, green: 0.55, blue: 1.0) : .white.opacity(0.7))
+                }
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 20)
+    }
+}
+
+// MARK: - Text Input
+
+struct TextInputBar: View {
+    @EnvironmentObject var callManager: CallManager
+
+    var body: some View {
+        HStack(spacing: 10) {
+            TextField("Message Claire...", text: $callManager.textInput)
+                .textFieldStyle(.plain)
+                .font(.system(size: 14, design: .rounded))
+                .foregroundStyle(.white.opacity(0.85))
+                .onSubmit { callManager.sendText() }
+
+            if !callManager.textInput.isEmpty {
+                Button(action: { callManager.sendText() }) {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(Color(red: 0.2, green: 0.45, blue: 1.0))
+                }
+                .buttonStyle(.plain)
+                .transition(.scale.combined(with: .opacity))
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .animation(.easeOut(duration: 0.15), value: callManager.textInput.isEmpty)
     }
 }
 
