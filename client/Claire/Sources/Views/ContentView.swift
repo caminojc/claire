@@ -48,18 +48,50 @@ struct CenterContent: View {
                     .foregroundStyle(.white.opacity(0.5))
             }
         } else {
-            // In-call: show transcript
-            VStack(spacing: 12) {
-                if !callManager.statusMessage.isEmpty {
-                    Text(callManager.statusMessage)
-                        .font(.system(size: 17, weight: .regular, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.8))
-                        .multilineTextAlignment(.center)
-                        .lineLimit(4)
-                        .animation(.easeInOut(duration: 0.2), value: callManager.statusMessage)
+            // Scrolling conversation
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 10) {
+                        ForEach(callManager.messages) { msg in
+                            HStack {
+                                if msg.role == "user" { Spacer() }
+                                Text(msg.text)
+                                    .font(.system(size: 15, design: .rounded))
+                                    .foregroundStyle(.white.opacity(msg.role == "user" ? 0.9 : 0.75))
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 8)
+                                    .background(
+                                        msg.role == "user"
+                                            ? Color(red: 0.16, green: 0.38, blue: 1.0).opacity(0.4)
+                                            : Color.white.opacity(0.08)
+                                    )
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                if msg.role == "assistant" { Spacer() }
+                            }
+                            .id(msg.id)
+                        }
+
+                        if callManager.isSpeaking {
+                            HStack {
+                                Spacer()
+                                Text("...")
+                                    .font(.system(size: 15, design: .rounded))
+                                    .foregroundStyle(.white.opacity(0.4))
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 8)
+                                    .background(Color(red: 0.16, green: 0.38, blue: 1.0).opacity(0.2))
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+                .onChange(of: callManager.messages.count) { _ in
+                    if let last = callManager.messages.last {
+                        withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
+                    }
                 }
             }
-            .padding(.horizontal, 16)
         }
     }
 }

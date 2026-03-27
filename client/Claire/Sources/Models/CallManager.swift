@@ -12,9 +12,12 @@ enum CallState {
     case disconnecting
 }
 
-/// Claire voice call manager.
-/// Uses Zipper SDK (via ClaireAudioBridge) for audio with full AFE.
-/// PortAudio on macOS, CoreAudio on iOS.
+struct ChatMessage: Identifiable {
+    let id = UUID()
+    let role: String   // "user" or "assistant"
+    var text: String
+}
+
 @MainActor
 class CallManager: ObservableObject {
     @Published var state: CallState = .idle
@@ -26,6 +29,7 @@ class CallManager: ObservableObject {
     @Published var userLevel: Float = 0
     @Published var streamingLevel: Float = 0
     @Published var textInput: String = ""
+    @Published var messages: [ChatMessage] = []
 
     private var callTimer: Timer?
     private var callStartTime: Date?
@@ -58,28 +62,20 @@ class CallManager: ObservableObject {
         conversationHistory = [
             ["role": "prompt", "content": "You are Claire, a helpful voice agent."]
         ]
+        messages = []
 
-        // Request mic permission first, then connect
         #if os(macOS)
         AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
             Task { @MainActor in
-                if granted {
-                    self?.initAndConnect()
-                } else {
-                    self?.statusMessage = "Mic access denied"
-                    self?.state = .idle
-                }
+                if granted { self?.initAndConnect() }
+                else { self?.statusMessage = "Mic access denied"; self?.state = .idle }
             }
         }
         #else
         AVAudioApplication.requestRecordPermission { [weak self] granted in
             Task { @MainActor in
-                if granted {
-                    self?.initAndConnect()
-                } else {
-                    self?.statusMessage = "Mic access denied"
-                    self?.state = .idle
-                }
+                if granted { self?.initAndConnect() }
+                else { self?.statusMessage = "Mic access denied"; self?.state = .idle }
             }
         }
         #endif
@@ -88,7 +84,6 @@ class CallManager: ObservableObject {
     private func initAndConnect() {
         statusMessage = "Connecting..."
         let modelDir = Bundle.main.resourcePath ?? ""
-        print("[Call] Init Zipper SDK with models at: \(modelDir)")
         audioBridge = ClaireAudioBridge(modelDirectory: modelDir)
         audioBridge?.delegate = bridgeDelegate
         webSocketClient.connect()
@@ -99,6 +94,7 @@ class CallManager: ObservableObject {
         stopTimer()
         audioBridge?.stop()
         audioBridge = nil
+        ttsPlayer?.stop()
         webSocketClient.disconnect()
         state = .idle
         callDuration = 0
@@ -115,51 +111,18 @@ class CallManager: ObservableObject {
         guard !text.isEmpty else { return }
         textInput = ""
         conversationHistory.append(["role": "user", "content": text])
-        statusMessage = "You: \(text)"
+        messages.append(ChatMessage(role: "user", text: text))
         currentLlmResponse = ""
         webSocketClient.sendAudio(uuid: UUID().uuidString, audioData: Data(), messages: conversationHistory)
     }
 
-    private func playTtsAudio(_ pcmData: Data) {
-        // Wrap PCM int16 24kHz in WAV header for AVAudioPlayer
-        let sr = 24000, ch = 1, bps = 16
-        let byteRate = sr * ch * bps / 8
-        let blockAlign = ch * bps / 8
-        var wav = Data()
-        wav.append(contentsOf: "RIFF".utf8)
-        var fs = UInt32(36 + pcmData.count).littleEndian; wav.append(Data(bytes: &fs, count: 4))
-        wav.append(contentsOf: "WAVEfmt ".utf8)
-        var cs = UInt32(16).littleEndian; wav.append(Data(bytes: &cs, count: 4))
-        var af = UInt16(1).littleEndian; wav.append(Data(bytes: &af, count: 2))
-        var nc = UInt16(ch).littleEndian; wav.append(Data(bytes: &nc, count: 2))
-        var s = UInt32(sr).littleEndian; wav.append(Data(bytes: &s, count: 4))
-        var br = UInt32(byteRate).littleEndian; wav.append(Data(bytes: &br, count: 4))
-        var ba = UInt16(blockAlign).littleEndian; wav.append(Data(bytes: &ba, count: 2))
-        var bp = UInt16(bps).littleEndian; wav.append(Data(bytes: &bp, count: 2))
-        wav.append(contentsOf: "data".utf8)
-        var ds = UInt32(pcmData.count).littleEndian; wav.append(Data(bytes: &ds, count: 4))
-        wav.append(pcmData)
-
-        do {
-            ttsPlayer = try AVAudioPlayer(data: wav)
-            ttsPlayer?.play()
-        } catch {
-            print("[Call] TTS play error: \(error)")
-        }
-    }
-
-    func toggleMute() {
-        isMuted.toggle()
-        audioBridge?.muteMic(isMuted)
-    }
-
+    func toggleMute() { isMuted.toggle(); audioBridge?.muteMic(isMuted) }
     func toggleSpeaker() { isSpeakerOn.toggle() }
 
     // MARK: - Zipper SDK Callbacks
 
     func handleEncodedPayload(_ data: Data, startTimeMs: Int32, timeMs: Int32) {
         pendingPayloads[timeMs] = data
-        print("[Call] Encoded: \(data.count)b id=\(timeMs)")
     }
 
     func handleSegmentFinished(timeMs: Int32) {
@@ -167,7 +130,6 @@ class CallManager: ObservableObject {
         pendingPayloads.removeAll()
         currentStreamId = timeMs
         currentLlmResponse = ""
-        print("[Call] Segment done: \(payload.count)b → server")
         webSocketClient.sendAudio(uuid: UUID().uuidString, audioData: payload, messages: conversationHistory)
     }
 
@@ -178,6 +140,32 @@ class CallManager: ObservableObject {
     func handleUserSpeechChanged(_ active: Bool) {
         isSpeaking = active
         if active { statusMessage = "Listening..." }
+    }
+
+    // MARK: - TTS Playback
+
+    private func playTtsAudio(_ pcmData: Data) {
+        let sr = 24000, ch = 1, bps = 16
+        var wav = Data()
+        wav.append(contentsOf: "RIFF".utf8)
+        var fs = UInt32(36 + pcmData.count).littleEndian; wav.append(Data(bytes: &fs, count: 4))
+        wav.append(contentsOf: "WAVEfmt ".utf8)
+        var cs = UInt32(16).littleEndian; wav.append(Data(bytes: &cs, count: 4))
+        var af = UInt16(1).littleEndian; wav.append(Data(bytes: &af, count: 2))
+        var nc = UInt16(ch).littleEndian; wav.append(Data(bytes: &nc, count: 2))
+        var s = UInt32(sr).littleEndian; wav.append(Data(bytes: &s, count: 4))
+        var br = UInt32(sr * ch * bps / 8).littleEndian; wav.append(Data(bytes: &br, count: 4))
+        var ba = UInt16(ch * bps / 8).littleEndian; wav.append(Data(bytes: &ba, count: 2))
+        var bp = UInt16(bps).littleEndian; wav.append(Data(bytes: &bp, count: 2))
+        wav.append(contentsOf: "data".utf8)
+        var ds = UInt32(pcmData.count).littleEndian; wav.append(Data(bytes: &ds, count: 4))
+        wav.append(pcmData)
+        do {
+            ttsPlayer = try AVAudioPlayer(data: wav)
+            ttsPlayer?.play()
+        } catch {
+            print("[Call] TTS play error: \(error)")
+        }
     }
 
     // MARK: - Timer
@@ -195,9 +183,7 @@ class CallManager: ObservableObject {
     }
 
     private func stopTimer() {
-        callTimer?.invalidate()
-        callTimer = nil
-        callStartTime = nil
+        callTimer?.invalidate(); callTimer = nil; callStartTime = nil
     }
 }
 
@@ -208,20 +194,16 @@ extension CallManager: ClaireWebSocketDelegate {
         Task { @MainActor in
             state = .connected
             startTimer()
-            // PCM16 16kHz — server STT expects PCM, not mel
             webSocketClient.sendConfig(uuid: sessionUuid, codecUpstream: "pcm16_16kHz")
-            // Start Zipper SDK audio (PortAudio + AFE + VAD) with PCM16 encoder
             audioBridge?.start(withEncoderType: 2) // ENC_PCM16_16KHZ
-            statusMessage = "Ready — speak to Claire"
+            statusMessage = ""
         }
     }
 
     nonisolated func didDisconnect() {
         Task { @MainActor in
             if state != .idle {
-                audioBridge?.stop()
-                state = .idle
-                stopTimer()
+                audioBridge?.stop(); state = .idle; stopTimer()
                 statusMessage = "Disconnected"
             }
         }
@@ -236,17 +218,26 @@ extension CallManager: ClaireWebSocketDelegate {
             switch type {
             case "stt_text_result_response":
                 if let stt = json["stt_text_result"] as? String, !stt.isEmpty {
-                    statusMessage = "You: \(stt)"
                     conversationHistory.append(["role": "user", "content": stt])
+                    messages.append(ChatMessage(role: "user", text: stt))
                     currentLlmResponse = ""
                 }
+
             case "llm_completion_result_response":
                 if let c = json["llm_completion_result"] as? [String: Any],
                    let ch = c["choices"] as? [[String: Any]],
                    let d = ch.first?["delta"] as? [String: Any],
                    let t = d["content"] as? String {
+                    if currentLlmResponse.isEmpty {
+                        // Start new assistant message
+                        messages.append(ChatMessage(role: "assistant", text: t))
+                    } else {
+                        // Append to last assistant message
+                        if var last = messages.last, last.role == "assistant" {
+                            messages[messages.count - 1].text += t
+                        }
+                    }
                     currentLlmResponse += t
-                    statusMessage = "Claire: \(currentLlmResponse.prefix(120))\(currentLlmResponse.count > 120 ? "..." : "")"
                 }
                 if let c = json["llm_completion_result"] as? [String: Any],
                    let ch = c["choices"] as? [[String: Any]],
@@ -254,35 +245,33 @@ extension CallManager: ClaireWebSocketDelegate {
                    !currentLlmResponse.isEmpty {
                     conversationHistory.append(["role": "assistant", "content": currentLlmResponse])
                 }
+
             case "tts_audio_result_response":
                 if let b64 = json["audio_base64"] as? String,
                    let audio = Data(base64Encoded: b64) {
-                    print("[Call] TTS: \(audio.count)b")
-                    // Try Zipper SDK playout first (provides AEC reference)
-                    audioBridge?.addStreamingData(audio, streamId: currentStreamId,
-                                                  decoderFormat: 2, isEnd: false)
-                    // Also play via AVAudioPlayer as fallback
+                    audioBridge?.addStreamingData(audio, streamId: currentStreamId, decoderFormat: 2, isEnd: false)
                     playTtsAudio(audio)
                 }
+
             case "config_response":
                 print("[Call] Config OK")
+
             case "error_response":
-                statusMessage = "Error: \(json["message"] as? String ?? "unknown")"
+                let msg = json["message"] as? String ?? "unknown"
+                messages.append(ChatMessage(role: "assistant", text: "Error: \(msg)"))
+
             default: break
             }
         }
     }
 
-    nonisolated func didReceiveBinary(_ data: Data) {
-        print("[Call] Binary: \(data.count)b (ignored)")
-    }
+    nonisolated func didReceiveBinary(_ data: Data) {}
 }
 
 // MARK: - Bridge Delegate
 
 class BridgeDelegateAdapter: NSObject, ClaireAudioBridgeDelegate {
     weak var callManager: CallManager?
-
     func onEncodedPayload(_ data: Data, startTimeMs: Int32, timeMs: Int32) {
         Task { @MainActor in callManager?.handleEncodedPayload(data, startTimeMs: startTimeMs, timeMs: timeMs) }
     }
