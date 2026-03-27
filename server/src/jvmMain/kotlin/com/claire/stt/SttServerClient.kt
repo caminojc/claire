@@ -15,13 +15,15 @@ class SttServerClient(
     private val sttServerUrl: String = System.getenv("STT_SERVER_URL") ?: "http://localhost:1236"
 
     /**
-     * Transcribe PCM audio (16kHz, 16-bit mono) to text.
+     * Transcribe audio to text. Supports PCM and mel-encoded payloads.
      */
-    suspend fun transcribe(pcmAudio: ByteArray): String {
+    suspend fun transcribe(audioData: ByteArray, codec: String = "pcm16_16kHz"): String {
+        val endpoint = if (codec == "smpl-mel") "/transcribe_mel" else "/transcribe"
         return try {
-            val response = httpClient.post("$sttServerUrl/transcribe") {
+            SLog.i("STT: $endpoint (${audioData.size} bytes)")
+            val response = httpClient.post("$sttServerUrl$endpoint") {
                 contentType(ContentType.Application.OctetStream)
-                setBody(pcmAudio)
+                setBody(audioData)
             }
             if (response.status == HttpStatusCode.OK) {
                 response.bodyAsText().trim()

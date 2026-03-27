@@ -187,8 +187,8 @@ extension CallManager: ClaireWebSocketDelegate {
         Task { @MainActor in
             state = .connected
             startTimer()
-            webSocketClient.sendConfig(uuid: sessionUuid, codecUpstream: "pcm16_16kHz")
-            audioBridge?.start(withEncoderType: 2)
+            webSocketClient.sendConfig(uuid: sessionUuid, codecUpstream: "smpl-mel")
+            audioBridge?.start(withEncoderType: 0) // ENC_MelCodec
             statusMessage = ""
         }
     }

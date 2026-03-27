@@ -2,10 +2,16 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleName</key>
+	<string>Claire</string>
+	<key>CFBundleDisplayName</key>
+	<string>Claire</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>UILaunchScreen</key>
+	<dict/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Claire needs access to your microphone for voice conversations.</string>
 	<key>UISupportedInterfaceOrientations</key>
