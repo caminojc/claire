@@ -58,6 +58,7 @@ struct CenterContent: View {
                                 Text(msg.text)
                                     .font(.system(size: 15, design: .rounded))
                                     .foregroundStyle(.white.opacity(msg.role == "user" ? 0.9 : 0.75))
+                                    .textSelection(.enabled)
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 8)
                                     .background(
