@@ -1,69 +1,74 @@
 # Claire
 
-Voice AI agent for Claude. Real-time voice conversations powered by Claude's intelligence, the SMPL audio stack (AFE, Zipper SDK, SegVox VAD), and self-hosted STT/TTS on NVIDIA DGX.
+Voice AI agent for Claude. Real-time voice conversations with echo cancellation, on-device VAD, and streaming TTS.
 
 ## What It Does
 
-You talk. Claire listens (with echo cancellation), transcribes your speech, sends it to Claude, converts the response to speech, and plays it back — all in real time. Full duplex voice with barge-in support.
+Talk to Claude naturally. Claire captures your voice through the SMPL audio front-end (echo cancellation + noise suppression), segments speech with SegVox VAD, transcribes via Parakeet STT, generates responses with Claude, synthesizes speech with Kokoro TTS, and plays it back through the Zipper SDK — all with barge-in support.
 
 ## Architecture
 
 ```
 Client (macOS / iOS)                    Server (DGX Spark)
 ┌────────────────────┐               ┌────────────────────────┐
-│ Mic → SMPL AFE ──→ │  WebSocket    │ Realtime Server (Ktor) │
-│   PortAudio        │──────────────→│  ├─ STT (Parakeet)     │
-│   SegVox VAD       │               │  ├─ LLM (Claude API)   │
-│   PCM16 encoder    │               │  └─ TTS (Kokoro)       │
-│                    │←──────────────│                        │
-│ ←─ AVAudioPlayer   │  WebSocket    │  Streaming sentences   │
-│   Zipper playout   │               │  Base64 PCM chunks     │
+│ Mic                │               │                        │
+│  ↓                 │               │                        │
+│ SMPL AFE (AEC+NS)  │               │                        │
+│  ↓                 │  WebSocket    │                        │
+│ SegVox VAD         │──────────────→│ Parakeet STT (GPU)     │
+│  ↓                 │  PCM 16kHz    │  ↓                     │
+│ Zipper SDK         │               │ Claude Haiku (API)     │
+│  (encode+segment)  │               │  ↓                     │
+│                    │←──────────────│ Kokoro TTS (GPU)       │
+│ Zipper SDK         │  PCM 24kHz    │  streaming sentences   │
+│  (playout+AEC ref) │               │                        │
+│  ↓                 │               │                        │
+│ Speaker            │               │                        │
 └────────────────────┘               └────────────────────────┘
 ```
 
-### Client Stack
-- **SMPL Zipper SDK** — audio pipeline: capture, AFE, VAD, segmentation, playout
-- **SmplAFELib** — echo cancellation + noise suppression (NEON-optimized)
-- **SegVox VAD** — fast on-device voice activity detection
-- **PortAudio** — macOS audio I/O (CoreAudio backend)
-- **SwiftUI** — modern phone-call UI with animated audio energy background
+### Client
+| Component | What It Does |
+|-----------|-------------|
+| SmplAFELib (1.8MB) | Echo cancellation, noise suppression, AGC |
+| SegVox VAD | On-device voice activity detection |
+| Zipper SDK | Audio pipeline: capture → AFE → VAD → encode → playout |
+| PortAudio | macOS CoreAudio I/O |
+| SwiftUI | Conversation UI with audio energy visualization |
 
-### Server Stack
-- **Kotlin/Ktor** — WebSocket hub on port 8080
-- **Parakeet v2** (NeMo) — GPU-accelerated speech-to-text on port 1236
-- **Kokoro-82M** — GPU-accelerated text-to-speech on port 1238
-- **Claude API** — Haiku for fast response, streaming tokens
+### Server
+| Component | Port | What It Does |
+|-----------|------|-------------|
+| Ktor WebSocket | 8080 | Orchestrates STT → LLM → TTS pipeline |
+| Parakeet v2 (NeMo) | 1236 | GPU speech-to-text |
+| Kokoro-82M | 1238 | GPU text-to-speech, streaming |
+| Claude Haiku | — | Fast conversational AI |
 
-## Quick Start
+## Setup
 
-### Prerequisites
-- macOS 14+ with Xcode 16+
-- NVIDIA GPU server (DGX Spark or similar) with Docker or Python
-- Anthropic API key
+### Client (macOS)
 
-### Build Client
 ```bash
-# Init submodules (Atria audio stack + shared models)
 git submodule update --init --recursive
 
-# Build native C++ audio library
+# Build C++ audio library
 cd client/native && ./build-ios.sh
 
-# Open in Xcode
+# Open and run
 open client/Claire.xcodeproj
-# Select Claire_macOS scheme, Build & Run
+# Select Claire_macOS → Run
 ```
 
-### Run Server
+### Server (DGX / GPU)
+
 ```bash
-# On your GPU server:
 export ANTHROPIC_API_KEY=sk-ant-...
 
-# STT server
+# STT
 cd stt-server && pip install -r requirements.txt
 python -m uvicorn server:app --port 1236
 
-# TTS server
+# TTS
 cd tts-server && pip install -r requirements.txt
 python -m uvicorn server:app --port 1238
 
@@ -73,36 +78,25 @@ cd server && ../gradlew run
 
 ## Configuration
 
-| Env Var | Default | Description |
-|---------|---------|-------------|
+| Variable | Default | Description |
+|----------|---------|-------------|
 | `ANTHROPIC_API_KEY` | — | Required |
 | `CLAIRE_MODEL` | `claude-haiku-4-5-20251001` | Claude model |
-| `CLAIRE_VOICE` | `af_heart` | Kokoro TTS voice |
-| `PORT` | `8080` | WebSocket server port |
-| `STT_SERVER_URL` | `http://localhost:1236` | STT endpoint |
-| `TTS_SERVER_URL` | `http://localhost:1238` | TTS endpoint |
+| `CLAIRE_VOICE` | `af_heart` | Kokoro voice |
+| `PORT` | `8080` | Server port |
 
-## Project Structure
+## Status
 
-```
-claire/
-├── client/                    # macOS/iOS SwiftUI app
-│   ├── Claire/Sources/
-│   │   ├── Views/            # UI (ContentView)
-│   │   ├── Models/           # CallManager, ChatMessage
-│   │   ├── Network/          # WebSocket client
-│   │   ├── Audio/            # AudioManager (fallback)
-│   │   └── Native/           # ObjC++ bridge to Zipper SDK
-│   ├── native/               # CMake build for C++ audio lib
-│   └── Frameworks/           # SMPLAudioProcessing.xcframework
-├── server/                    # Kotlin realtime server
-├── stt-server/                # Python Parakeet STT
-├── tts-server/                # Python Kokoro TTS
-├── submodules/
-│   ├── atria/                # SMPL audio stack (C++)
-│   └── atria-kotlin/         # Shared protocol models
-└── PLAN.md
-```
+Working end-to-end:
+- Voice capture with SMPL AFE echo cancellation
+- SegVox VAD speech detection
+- Parakeet STT transcription
+- Claude Haiku responses
+- Kokoro TTS with sentence-level streaming
+- Zipper SDK playout with AEC reference
+- Barge-in support
+- Text chat alongside voice
+- Conversation history
 
 ## License
 
