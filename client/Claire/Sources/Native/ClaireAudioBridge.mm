@@ -7,35 +7,43 @@ public:
     __weak id<ClaireAudioBridgeDelegate> delegate = nil;
 
     void OnEncodedPayload(const uint8_t data[], int numBytes, int32_t startTimeMs, int32_t timeMs) override {
+        NSLog(@"[ClaireAudio] OnEncodedPayload: %d bytes, timeMs=%d", numBytes, timeMs);
         NSData *nsData = [NSData dataWithBytes:data length:numBytes];
         id<ClaireAudioBridgeDelegate> d = delegate;
         if (d) [d onEncodedPayload:nsData startTimeMs:startTimeMs timeMs:timeMs];
     }
 
     void OnSegmentFinished(int32_t timeMs) override {
+        NSLog(@"[ClaireAudio] OnSegmentFinished: timeMs=%d", timeMs);
         id<ClaireAudioBridgeDelegate> d = delegate;
         if (d) [d onSegmentFinished:timeMs];
     }
 
     void OnSegmentCancelled(int32_t timeMs) override {
+        NSLog(@"[ClaireAudio] OnSegmentCancelled: timeMs=%d", timeMs);
         id<ClaireAudioBridgeDelegate> d = delegate;
         if (d) [d onSegmentCancelled:timeMs];
     }
 
-    void OnSegmentStarted(int32_t timeMs) override {}
+    void OnSegmentStarted(int32_t timeMs) override {
+        NSLog(@"[ClaireAudio] OnSegmentStarted: timeMs=%d", timeMs);
+    }
 
     void OnUserSpeechChanged(bool active) override {
+        NSLog(@"[ClaireAudio] OnUserSpeechChanged: %d", active);
         id<ClaireAudioBridgeDelegate> d = delegate;
         BOOL a = active;
         if (d) [d onUserSpeechChanged:a];
     }
 
     void OnStreamingStarted(int32_t sid) override {
+        NSLog(@"[ClaireAudio] OnStreamingStarted: %d", sid);
         id<ClaireAudioBridgeDelegate> d = delegate;
         if (d) [d onStreamingStarted:sid];
     }
 
     void OnStreamingStopped(int32_t sid, int32_t timeMs) override {
+        NSLog(@"[ClaireAudio] OnStreamingStopped: %d timeMs=%d", sid, timeMs);
         id<ClaireAudioBridgeDelegate> d = delegate;
         if (d) [d onStreamingStopped:sid timeMs:timeMs];
     }
@@ -55,8 +63,10 @@ public:
         _running = NO;
 
         std::string path = [modelDir UTF8String];
-        int result = _client->Initialize(path, _listener, ENC_MelCodec);
-        NSLog(@"[ClaireAudio] Zipper SDK init: %d (model dir: %@)", result, modelDir);
+        NSLog(@"[ClaireAudio] Initializing Zipper SDK...");
+        NSLog(@"[ClaireAudio]   Model dir: %@", modelDir);
+        int result = _client->Initialize(path, _listener, ENC_PCM16_16KHZ);
+        NSLog(@"[ClaireAudio]   Init result: %d (0=success)", result);
     }
     return self;
 }
@@ -73,17 +83,21 @@ public:
 }
 
 - (void)startWithEncoderType:(int)encoderType {
-    if (_running || !_client) return;
+    if (_running || !_client) {
+        NSLog(@"[ClaireAudio] Start skipped: running=%d client=%p", _running, _client);
+        return;
+    }
+    NSLog(@"[ClaireAudio] Starting audio engine (encoder=%d)...", encoderType);
     int result = _client->Start();
     _running = (result == 0);
-    NSLog(@"[ClaireAudio] Start: %d", result);
+    NSLog(@"[ClaireAudio] Start result: %d (0=success), running=%d", result, _running);
 }
 
 - (void)stop {
     if (!_running || !_client) return;
+    NSLog(@"[ClaireAudio] Stopping...");
     _client->Stop();
     _running = NO;
-    NSLog(@"[ClaireAudio] Stopped");
 }
 
 - (void)addStreamingData:(NSData *)data streamId:(int)streamId decoderFormat:(int)format isEnd:(BOOL)isEnd {
