@@ -1,6 +1,7 @@
 package com.claire
 
 import com.claire.llm.AnthropicClient
+import com.claire.llm.LocalLlmClient
 import com.claire.stt.SttServerClient
 import com.claire.tts.TtsServerClient
 import kotlinx.serialization.json.Json
@@ -66,6 +67,7 @@ val globalModule = module {
         }
     }
     single { AnthropicClient(get(), get()) }
+    single { LocalLlmClient(get(), get()) }
     single { SttServerClient(get()) }
     single { TtsServerClient(get()) }
 }

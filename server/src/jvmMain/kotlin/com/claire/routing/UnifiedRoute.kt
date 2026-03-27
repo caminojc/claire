@@ -38,9 +38,11 @@ interface WebSocketRoute {
 class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
 
     private val anthropicClient: AnthropicClient = scope.get()
+    private val localLlmClient: com.claire.llm.LocalLlmClient = scope.get()
     private val sttServerClient: SttServerClient = scope.get()
     private val ttsServerClient: TtsServerClient = scope.get()
     private val json: Json = scope.get()
+    private val useLocalLlm: Boolean = System.getenv("USE_LOCAL_LLM")?.toBoolean() ?: false
 
     private val singleDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
@@ -273,9 +275,69 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                 updatedMessages = messages + Message(role = OpenAiRole.USER, content = sttText)
             }
 
-            // === Phase 2: LLM (Claude) + TTS in parallel ===
+            // === Phase 2: Try local LLM first, fall back to Claude ===
             val ttsTextChannel = Channel<String>(capacity = 20)
             val completionId = "claire-${System.currentTimeMillis()}"
+
+            // Try local LLM for fast response (if available)
+            if (useLocalLlm) {
+                val userText = updatedMessages.lastOrNull { it.role == OpenAiRole.USER }?.content ?: ""
+                val localResponse = localLlmClient.quickResponse(userText)
+                if (localResponse != null && localResponse.isNotBlank()) {
+                    SLog.i("Local LLM responded: '${localResponse.take(80)}'")
+
+                    // Send as LLM completion to client
+                    val localChunk = OpenAiChatCompletionChunk(
+                        id = completionId,
+                        created = (System.currentTimeMillis() / 1000).toInt(),
+                        model = OpenAiModelId("local"),
+                        choices = listOf(OpenAiChatChunk(
+                            index = 0,
+                            delta = OpenAiChatDelta(content = localResponse),
+                            finishReason = OpenAiFinishReason.Stop,
+                        )),
+                    )
+                    val llmResponse = json.encodeToString(
+                        UnifiedResponse.serializer(),
+                        UnifiedResponse.LlmCompletionResult(
+                            uuid = uuid,
+                            chatCompletionChunk = localChunk,
+                            deviceStartTime = deviceStartTime,
+                            clientTimingId = clientTimingId,
+                        )
+                    )
+                    outputChannel.send(Frame.Text(llmResponse))
+
+                    // TTS the local response immediately
+                    if (enabledTts) {
+                        val audioChannel = Channel<TtsServerClient.TtsAudioChunk>(capacity = 50)
+                        backgroundScope.launch {
+                            ttsServerClient.streamTts(text = localResponse, outputChannel = audioChannel)
+                        }
+                        for (audioChunk in audioChannel) {
+                            if (audioChunk.audio.isEmpty() || audioChunk.isEnd) break
+                            val audioB64 = java.util.Base64.getEncoder().encodeToString(audioChunk.audio)
+                            val ttsJson = buildJsonObject {
+                                put("type", "tts_audio_result_response")
+                                put("uuid", uuid)
+                                put("audio_base64", audioB64)
+                                put("is_end", false)
+                                put("format", "pcm_int16_24000")
+                            }
+                            outputChannel.send(Frame.Text(ttsJson.toString()))
+                        }
+                    }
+
+                    // If local response seems complete (not a deferral), skip Claude
+                    val isSimple = localResponse.length < 100 &&
+                        !localResponse.contains("let me") && !localResponse.contains("I'll")
+                    if (isSimple) {
+                        SLog.i("Local LLM sufficient, skipping Claude")
+                        return
+                    }
+                    SLog.i("Local LLM gave preliminary response, continuing to Claude for detail")
+                }
+            }
 
             // LLM streaming task — feeds text into TTS channel
             val llmJob = backgroundScope.launch {
