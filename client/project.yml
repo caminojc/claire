@@ -45,7 +45,7 @@ targets:
           cp -f "${PROJECT_DIR}/Claire/Resources/"*.icns "${DEST}/" 2>/dev/null || true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.caminojc.claire
+        PRODUCT_BUNDLE_IDENTIFIER: smpl.claire.ios
         INFOPLIST_FILE: Claire/Resources/Info.plist
         GENERATE_INFOPLIST_FILE: false
         MARKETING_VERSION: "0.1.0"
