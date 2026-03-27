@@ -302,21 +302,35 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                         )
                         outputChannel.send(Frame.Text(llmResponse))
 
-                        // Buffer text for TTS — send whole response as one chunk
-                        // (avoids cutoff from aggressive sentence splitting)
+                        // Buffer text for TTS — flush on complete sentences
                         val text = chunk.choices.firstOrNull()?.delta?.content
                         if (text != null && enabledTts) {
                             textBuffer.append(text)
+                            // Check if buffer ends with a sentence-ending punctuation
+                            val buf = textBuffer.toString()
+                            // Split on sentence boundaries, keep last incomplete part
+                            val sentenceEnders = Regex("(?<=[.!?])\\s+")
+                            val parts = buf.split(sentenceEnders)
+                            if (parts.size > 1) {
+                                // Send all complete sentences
+                                val complete = parts.dropLast(1).joinToString(" ")
+                                if (complete.isNotBlank()) {
+                                    SLog.i("TTS sentence: '${complete.take(60)}'")
+                                    ttsTextChannel.send(complete)
+                                }
+                                // Keep the incomplete part
+                                textBuffer.clear()
+                                textBuffer.append(parts.last())
+                            }
                         }
                     }
-                    // Flush remaining text — append period so TTS generates it fully
+                    // Flush remaining text
                     if (textBuffer.isNotEmpty()) {
-                        var remaining = textBuffer.toString().trim()
-                        if (remaining.isNotEmpty() && !remaining.endsWith(".") && !remaining.endsWith("!") && !remaining.endsWith("?")) {
-                            remaining += "."
+                        val remaining = textBuffer.toString().trim()
+                        if (remaining.isNotBlank()) {
+                            SLog.i("TTS flush: '${remaining.take(60)}'")
+                            ttsTextChannel.send(remaining)
                         }
-                        SLog.i("LLM flush remaining: '$remaining'")
-                        ttsTextChannel.send(remaining)
                     }
                 } finally {
                     ttsTextChannel.close()
