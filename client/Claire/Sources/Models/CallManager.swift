@@ -142,9 +142,22 @@ class CallManager: ObservableObject {
         if active { statusMessage = "Listening..." }
     }
 
-    // MARK: - TTS Playback
+    // MARK: - TTS Playback Queue
+
+    private var ttsQueue: [Data] = []
+    private var ttsPlaying = false
+    private var ttsDelegate: TtsDelegate?
 
     private func playTtsAudio(_ pcmData: Data) {
+        ttsQueue.append(pcmData)
+        if !ttsPlaying { playNextTtsChunk() }
+    }
+
+    private func playNextTtsChunk() {
+        guard !ttsQueue.isEmpty else { ttsPlaying = false; return }
+        ttsPlaying = true
+        let pcmData = ttsQueue.removeFirst()
+
         let sr = 24000, ch = 1, bps = 16
         var wav = Data()
         wav.append(contentsOf: "RIFF".utf8)
@@ -160,12 +173,24 @@ class CallManager: ObservableObject {
         wav.append(contentsOf: "data".utf8)
         var ds = UInt32(pcmData.count).littleEndian; wav.append(Data(bytes: &ds, count: 4))
         wav.append(pcmData)
+
         do {
             ttsPlayer = try AVAudioPlayer(data: wav)
+            ttsDelegate = TtsDelegate { [weak self] in
+                Task { @MainActor in self?.playNextTtsChunk() }
+            }
+            ttsPlayer?.delegate = ttsDelegate
             ttsPlayer?.play()
         } catch {
             print("[Call] TTS play error: \(error)")
+            playNextTtsChunk()
         }
+    }
+
+    class TtsDelegate: NSObject, AVAudioPlayerDelegate {
+        let onDone: () -> Void
+        init(onDone: @escaping () -> Void) { self.onDone = onDone }
+        func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully: Bool) { onDone() }
     }
 
     // MARK: - Timer
