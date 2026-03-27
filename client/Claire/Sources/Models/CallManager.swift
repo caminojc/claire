@@ -275,8 +275,8 @@ extension CallManager: ClaireWebSocketDelegate {
             case "tts_audio_result_response":
                 if let b64 = json["audio_base64"] as? String,
                    let audio = Data(base64Encoded: b64) {
+                    // Feed to Zipper SDK playout (handles AEC reference + ducking)
                     audioBridge?.addStreamingData(audio, streamId: currentStreamId, decoderFormat: 2, isEnd: false)
-                    playTtsAudio(audio)
                 }
 
             case "config_response":
