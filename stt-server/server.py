@@ -92,12 +92,32 @@ def get_mel_codec():
     return _mel_codec
 
 
+whisper_model = None
+
+@app.on_event("startup")
+async def load_whisper():
+    """Load whisper model for mel-encoded audio at startup."""
+    global whisper_model
+    try:
+        from faster_whisper import WhisperModel
+        logger.info("Loading faster-whisper large-v3 for mel transcription...")
+        whisper_model = WhisperModel("large-v3", device="cuda", compute_type="float16")
+        logger.info(f"Whisper loaded: n_mels={whisper_model.model.n_mels}")
+    except Exception as e:
+        logger.warning(f"Whisper load failed (mel path unavailable): {e}")
+        try:
+            logger.info("Trying whisper small.en on CPU...")
+            whisper_model = WhisperModel("small.en", device="cpu")
+            logger.info("Whisper small.en loaded on CPU")
+        except Exception as e2:
+            logger.error(f"All whisper models failed: {e2}")
+
+
 @app.post("/transcribe_mel")
 async def transcribe_mel(request: Request):
     """
     Transcribe mel-encoded audio from SMPL Zipper SDK.
-    Decodes mel → mel spectrogram → whisper transcription.
-    Falls back to Parakeet if whisper not available.
+    Pipeline: smpl_mel_dec → 80-band mel spectrogram → whisper generate → text
     """
     body = await request.body()
     if len(body) == 0:
@@ -106,52 +126,79 @@ async def transcribe_mel(request: Request):
     codec = get_mel_codec()
     if codec is None:
         raise HTTPException(status_code=503, detail="Mel codec not available")
+    if whisper_model is None:
+        raise HTTPException(status_code=503, detail="Whisper model not loaded")
 
     try:
-        import ctypes
+        import ctypes, time
+        t0 = time.time()
 
-        # Decode mel payload → mel spectrogram (128 bands)
-        mel_size = 240000  # max mel frames
+        # Decode mel payload → mel spectrogram (80 bands, transposed for whisper)
+        N_MELS = 80
+        max_frames = 3000  # 30 seconds max
+        mel_size = N_MELS * max_frames
         mel_buf = (ctypes.c_float * mel_size)()
-        err = codec.smpl_mel_dec(body, len(body), mel_buf, 0)
+
+        # transposed_out=1 gives us [n_mels, n_frames] layout (whisper format)
+        err = codec.smpl_mel_dec(body, len(body), mel_buf, 1)
         if err != 0:
+            logger.error(f"Mel decode error: {err}")
             raise HTTPException(status_code=400, detail=f"Mel decode error: {err}")
 
-        # Convert to numpy
+        t_dec = time.time()
+
+        # Convert to numpy and find actual frame count
         mel_array = np.ctypeslib.as_array(mel_buf, shape=(mel_size,))
-        # Find actual length (non-zero portion)
-        nonzero = np.nonzero(mel_array)[0]
-        if len(nonzero) == 0:
+        # Find last non-zero element to determine actual length
+        nonzero_idx = np.flatnonzero(mel_array)
+        if len(nonzero_idx) == 0:
             return PlainTextResponse("")
-        mel_len = nonzero[-1] + 1
 
-        # Try faster-whisper if available
-        try:
-            from faster_whisper import WhisperModel
-            global whisper_model
-            if 'whisper_model' not in globals() or whisper_model is None:
-                logger.info("Loading faster-whisper tiny.en...")
-                whisper_model = WhisperModel("tiny.en", device="cuda", compute_type="float16")
-                logger.info("Whisper loaded")
+        actual_len = nonzero_idx[-1] + 1
+        n_frames = actual_len // N_MELS
+        if n_frames == 0:
+            return PlainTextResponse("")
 
-            # Whisper expects mel spectrogram as (n_mels=128, n_frames)
-            n_mels = 128
-            n_frames = mel_len // n_mels
-            mel_spec = mel_array[:n_mels * n_frames].reshape(n_mels, n_frames)
+        # Reshape to [n_mels, n_frames] then add batch dim [1, n_mels, n_frames]
+        mel_spec = mel_array[:N_MELS * n_frames].reshape(N_MELS, n_frames)
 
-            segments, _ = whisper_model.transcribe_from_mel(mel_spec)
-            text = " ".join([s.text for s in segments]).strip()
-            return PlainTextResponse(text)
+        # Pad to whisper's expected chunk length (3000 frames = 30s)
+        if n_frames < max_frames:
+            padded = np.zeros((N_MELS, max_frames), dtype=np.float32)
+            padded[:, :n_frames] = mel_spec
+            mel_spec = padded
 
-        except Exception as e:
-            logger.warning(f"Whisper mel transcription failed: {e}, trying PCM fallback")
-            # Can't easily convert mel back to PCM, return error
-            raise HTTPException(status_code=500, detail=f"Mel transcription not available: {e}")
+        mel_batch = np.expand_dims(mel_spec, 0)  # [1, 80, 3000]
+
+        t_reshape = time.time()
+
+        # Transcribe using CTranslate2 whisper
+        import ctranslate2
+        features = ctranslate2.StorageView.from_array(mel_batch)
+
+        # Whisper prompts: SOT token, language, transcribe task
+        tokenizer = whisper_model.hf_tokenizer
+        sot = tokenizer.encode("<|startoftranscript|>")
+        lang = tokenizer.encode("<|en|>")
+        task = tokenizer.encode("<|transcribe|>")
+        notimestamps = tokenizer.encode("<|notimestamps|>")
+        prompts = [sot + lang + task + notimestamps]
+
+        results = whisper_model.model.generate(features, prompts, beam_size=1, max_length=224)
+        tokens = results[0].sequences_ids[0]
+        text = tokenizer.decode(tokens).strip()
+
+        t_transcribe = time.time()
+
+        logger.info(f"Mel STT: {len(body)}B → {n_frames} frames → '{text[:80]}' "
+                     f"(dec={t_dec-t0:.0f}ms reshape={t_reshape-t_dec:.0f}ms whisper={t_transcribe-t_reshape:.0f}ms)")
+
+        return PlainTextResponse(text)
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Mel transcription error: {e}")
+        logger.error(f"Mel transcription error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
