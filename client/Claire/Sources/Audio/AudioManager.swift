@@ -18,9 +18,10 @@ class AudioManager {
     private var speechBuffer = Data()
     private var silenceFrameCount = 0
     private var speechFrameCount = 0
-    private let speechThresholdDB: Float = -40
-    private let silenceTimeout = 30
+    private let speechThresholdDB: Float = -38
+    private let silenceTimeout = 15   // ~300ms — faster end-of-speech detection
     private var isMuted = false
+    private var isDucked = false       // Mute mic during TTS playback (echo prevention)
     private var bufferCount = 0
 
     private lazy var playbackFormat: AVAudioFormat = {
@@ -143,7 +144,7 @@ class AudioManager {
     // MARK: - Capture Processing
 
     private func handleCapture(_ buffer: AVAudioPCMBuffer) {
-        guard !isMuted, let converter = captureConverter else { return }
+        guard !isMuted, !isDucked, let converter = captureConverter else { return }
 
         bufferCount += 1
         if bufferCount == 1 {
@@ -239,20 +240,46 @@ class AudioManager {
     // MARK: - Playback
 
     private var ttsPlayer: AVAudioPlayer?
+    private var ttsDelegate: TtsPlayerDelegate?
 
     func playAudio(pcmData: Data, sampleRate: Double = 24000) {
         guard pcmData.count > 1 else { return }
 
-        // Wrap raw PCM in a WAV header so AVAudioPlayer can play it
+        // Duck mic to prevent echo
+        isDucked = true
+        if isSpeaking {
+            isSpeaking = false
+            speechBuffer = Data()
+            DispatchQueue.main.async { self.onVADStateChanged?(false) }
+        }
+
         let wavData = createWavData(pcmData: pcmData, sampleRate: Int(sampleRate), channels: 1, bitsPerSample: 16)
 
         do {
             ttsPlayer = try AVAudioPlayer(data: wavData)
+            ttsDelegate = TtsPlayerDelegate { [weak self] in
+                // Unduck mic after playback finishes
+                self?.isDucked = false
+                self?.playoutLevel = 0
+                print("[Audio] TTS playback finished, mic unducked")
+            }
+            ttsPlayer?.delegate = ttsDelegate
             ttsPlayer?.play()
             playoutLevel = 0.5
-            print("[Audio] Playing TTS: \(pcmData.count) bytes (\(String(format: "%.1f", Double(pcmData.count) / 2.0 / sampleRate))s)")
+            let duration = Double(pcmData.count) / 2.0 / sampleRate
+            print("[Audio] Playing TTS: \(String(format: "%.1f", duration))s, mic ducked")
         } catch {
+            isDucked = false
             print("[Audio] playAudio error: \(error)")
+        }
+    }
+
+    // Delegate to detect when TTS playback finishes
+    class TtsPlayerDelegate: NSObject, AVAudioPlayerDelegate {
+        let onFinish: () -> Void
+        init(onFinish: @escaping () -> Void) { self.onFinish = onFinish }
+        func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+            onFinish()
         }
     }
 
@@ -292,8 +319,9 @@ class AudioManager {
     }
 
     func interruptPlayback() {
-        playerNode?.stop()
-        playerNode?.play()
+        ttsPlayer?.stop()
+        ttsPlayer = nil
+        isDucked = false
         playoutLevel = 0
     }
 
