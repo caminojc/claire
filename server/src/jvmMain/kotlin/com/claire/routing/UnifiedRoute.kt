@@ -302,13 +302,16 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                         )
                         outputChannel.send(Frame.Text(llmResponse))
 
-                        // Buffer text for TTS
+                        // Buffer text for TTS — flush on sentence boundaries only
                         val text = chunk.choices.firstOrNull()?.delta?.content
                         if (text != null && enabledTts) {
                             textBuffer.append(text)
-                            // Flush on sentence boundaries
-                            if (text.contains('.') || text.contains('!') || text.contains('?') || text.contains(',')) {
-                                ttsTextChannel.send(textBuffer.toString())
+                            val buf = textBuffer.toString()
+                            // Flush on sentence-ending punctuation (not comma — too aggressive)
+                            if (buf.contains(". ") || buf.contains("! ") || buf.contains("? ") ||
+                                buf.endsWith(".") || buf.endsWith("!") || buf.endsWith("?") ||
+                                buf.endsWith(".\n") || buf.length > 200) {
+                                ttsTextChannel.send(buf)
                                 textBuffer.clear()
                             }
                         }
@@ -389,10 +392,14 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                         }
                     }
                 }
+                // LLM must finish first (it feeds text to TTS channel)
+                llmJob.join()
+                // Then wait for TTS to drain all remaining chunks
                 ttsJob.join()
+                SLog.i("Pipeline complete for $uuid")
+            } else {
+                llmJob.join()
             }
-
-            llmJob.join()
 
         } catch (e: Exception) {
             SLog.e("Pipeline error for $uuid: ${e.message}")
