@@ -67,9 +67,13 @@ val globalModule = module {
         }
     }
     single {
-        com.claire.stt.SttNativeProcessor().apply {
-            val modelDir = System.getenv("WHISPER_MODEL_DIR") ?: "models"
-            init(modelDir)
+        com.claire.stt.SttNativeProcessor().also { processor ->
+            try {
+                val modelDir = System.getenv("WHISPER_MODEL_DIR") ?: "models"
+                processor.init(modelDir)
+            } catch (e: Exception) {
+                logging.SLog.e("Native STT init skipped: ${e.message}")
+            }
         }
     }
     single { AnthropicClient(get(), get()) }
