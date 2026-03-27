@@ -25,6 +25,18 @@ targets:
         compilerFlags: ["-x", "objective-c++", "-std=c++17", "-w"]
     resources:
       - path: Claire/Resources
+        includes:
+          - "**/*"
+    postBuildScripts:
+      - name: Copy Model Files
+        script: |
+          mkdir -p "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources"
+          cp -f "${PROJECT_DIR}/Claire/Resources/"*.dat "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
+          cp -f "${PROJECT_DIR}/Claire/Resources/"*.smpl "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
+          cp -f "${PROJECT_DIR}/Claire/Resources/"*.zip "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
+          cp -f "${PROJECT_DIR}/Claire/Resources/"*.json "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
+          cp -f "${PROJECT_DIR}/Claire/Resources/"*.mp3 "${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/" 2>/dev/null || true
+          echo "Copied model files to ${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources/"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.caminojc.claire
