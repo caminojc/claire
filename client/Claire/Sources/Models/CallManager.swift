@@ -42,6 +42,9 @@ class CallManager: ObservableObject {
     private var pendingPayloads: [Int32: Data] = [:]
     private var currentStreamId: Int32 = 0
     private var ttsPlayer: AVAudioPlayer?
+    private var ttsQueue: [Data] = []
+    private var ttsPlaying = false
+    private var ttsDelegate: TtsFinishDelegate?
 
     var formattedDuration: String {
         let m = Int(callDuration) / 60, s = Int(callDuration) % 60
@@ -116,6 +119,55 @@ class CallManager: ObservableObject {
         webSocketClient.sendAudio(uuid: UUID().uuidString, audioData: Data(), messages: conversationHistory)
     }
 
+    // MARK: - TTS Playback Queue
+
+    private func playTtsAudio(_ pcmData: Data) {
+        ttsQueue.append(pcmData)
+        if !ttsPlaying { playNextChunk() }
+    }
+
+    private func playNextChunk() {
+        guard !ttsQueue.isEmpty else { ttsPlaying = false; return }
+        ttsPlaying = true
+        let pcm = ttsQueue.removeFirst()
+        let wav = makeWav(pcm)
+        do {
+            ttsPlayer = try AVAudioPlayer(data: wav)
+            ttsDelegate = TtsFinishDelegate { [weak self] in
+                Task { @MainActor in self?.playNextChunk() }
+            }
+            ttsPlayer?.delegate = ttsDelegate
+            ttsPlayer?.play()
+        } catch {
+            print("[Call] TTS error: \(error)")
+            playNextChunk()
+        }
+    }
+
+    private func makeWav(_ pcm: Data) -> Data {
+        var w = Data()
+        w.append(contentsOf: "RIFF".utf8)
+        var fs = UInt32(36 + pcm.count).littleEndian; w.append(Data(bytes: &fs, count: 4))
+        w.append(contentsOf: "WAVEfmt ".utf8)
+        var cs = UInt32(16).littleEndian; w.append(Data(bytes: &cs, count: 4))
+        var af = UInt16(1).littleEndian; w.append(Data(bytes: &af, count: 2))
+        var nc = UInt16(1).littleEndian; w.append(Data(bytes: &nc, count: 2))
+        var s = UInt32(24000).littleEndian; w.append(Data(bytes: &s, count: 4))
+        var br = UInt32(48000).littleEndian; w.append(Data(bytes: &br, count: 4))
+        var ba = UInt16(2).littleEndian; w.append(Data(bytes: &ba, count: 2))
+        var bp = UInt16(16).littleEndian; w.append(Data(bytes: &bp, count: 2))
+        w.append(contentsOf: "data".utf8)
+        var ds = UInt32(pcm.count).littleEndian; w.append(Data(bytes: &ds, count: 4))
+        w.append(pcm)
+        return w
+    }
+
+    class TtsFinishDelegate: NSObject, AVAudioPlayerDelegate {
+        let cb: () -> Void
+        init(_ cb: @escaping () -> Void) { self.cb = cb }
+        func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully: Bool) { cb() }
+    }
+
     func toggleMute() { isMuted.toggle(); audioBridge?.muteMic(isMuted) }
     func toggleSpeaker() { isSpeakerOn.toggle() }
 
@@ -140,57 +192,6 @@ class CallManager: ObservableObject {
     func handleUserSpeechChanged(_ active: Bool) {
         isSpeaking = active
         if active { statusMessage = "Listening..." }
-    }
-
-    // MARK: - TTS Playback Queue
-
-    private var ttsQueue: [Data] = []
-    private var ttsPlaying = false
-    private var ttsDelegate: TtsDelegate?
-
-    private func playTtsAudio(_ pcmData: Data) {
-        ttsQueue.append(pcmData)
-        if !ttsPlaying { playNextTtsChunk() }
-    }
-
-    private func playNextTtsChunk() {
-        guard !ttsQueue.isEmpty else { ttsPlaying = false; return }
-        ttsPlaying = true
-        let pcmData = ttsQueue.removeFirst()
-
-        let sr = 24000, ch = 1, bps = 16
-        var wav = Data()
-        wav.append(contentsOf: "RIFF".utf8)
-        var fs = UInt32(36 + pcmData.count).littleEndian; wav.append(Data(bytes: &fs, count: 4))
-        wav.append(contentsOf: "WAVEfmt ".utf8)
-        var cs = UInt32(16).littleEndian; wav.append(Data(bytes: &cs, count: 4))
-        var af = UInt16(1).littleEndian; wav.append(Data(bytes: &af, count: 2))
-        var nc = UInt16(ch).littleEndian; wav.append(Data(bytes: &nc, count: 2))
-        var s = UInt32(sr).littleEndian; wav.append(Data(bytes: &s, count: 4))
-        var br = UInt32(sr * ch * bps / 8).littleEndian; wav.append(Data(bytes: &br, count: 4))
-        var ba = UInt16(ch * bps / 8).littleEndian; wav.append(Data(bytes: &ba, count: 2))
-        var bp = UInt16(bps).littleEndian; wav.append(Data(bytes: &bp, count: 2))
-        wav.append(contentsOf: "data".utf8)
-        var ds = UInt32(pcmData.count).littleEndian; wav.append(Data(bytes: &ds, count: 4))
-        wav.append(pcmData)
-
-        do {
-            ttsPlayer = try AVAudioPlayer(data: wav)
-            ttsDelegate = TtsDelegate { [weak self] in
-                Task { @MainActor in self?.playNextTtsChunk() }
-            }
-            ttsPlayer?.delegate = ttsDelegate
-            ttsPlayer?.play()
-        } catch {
-            print("[Call] TTS play error: \(error)")
-            playNextTtsChunk()
-        }
-    }
-
-    class TtsDelegate: NSObject, AVAudioPlayerDelegate {
-        let onDone: () -> Void
-        init(onDone: @escaping () -> Void) { self.onDone = onDone }
-        func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully: Bool) { onDone() }
     }
 
     // MARK: - Timer
