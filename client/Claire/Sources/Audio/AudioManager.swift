@@ -238,39 +238,57 @@ class AudioManager {
 
     // MARK: - Playback
 
+    private var ttsPlayer: AVAudioPlayer?
+
     func playAudio(pcmData: Data, sampleRate: Double = 24000) {
-        guard let player = playerNode, let eng = engine, eng.isRunning, pcmData.count > 1 else {
-            print("[Audio] playAudio: engine not running or no data")
-            return
-        }
-        let frameCount = pcmData.count / 2
+        guard pcmData.count > 1 else { return }
 
-        // Convert PCM int16 to float32 for playback
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: playbackFormat,
-                                             frameCapacity: AVAudioFrameCount(frameCount)) else {
-            print("[Audio] playAudio: can't create buffer")
-            return
-        }
-        buffer.frameLength = AVAudioFrameCount(frameCount)
-
-        pcmData.withUnsafeBytes { raw in
-            guard let src = raw.bindMemory(to: Int16.self).baseAddress,
-                  let dst = buffer.floatChannelData?[0] else { return }
-            for i in 0..<frameCount {
-                dst[i] = Float(src[i]) / 32768.0
-            }
-        }
+        // Wrap raw PCM in a WAV header so AVAudioPlayer can play it
+        let wavData = createWavData(pcmData: pcmData, sampleRate: Int(sampleRate), channels: 1, bitsPerSample: 16)
 
         do {
-            if !player.isPlaying {
-                player.play()
-            }
-            player.scheduleBuffer(buffer)
+            ttsPlayer = try AVAudioPlayer(data: wavData)
+            ttsPlayer?.play()
             playoutLevel = 0.5
-            print("[Audio] Scheduled \(frameCount) frames for playback")
+            print("[Audio] Playing TTS: \(pcmData.count) bytes (\(String(format: "%.1f", Double(pcmData.count) / 2.0 / sampleRate))s)")
         } catch {
             print("[Audio] playAudio error: \(error)")
         }
+    }
+
+    private func createWavData(pcmData: Data, sampleRate: Int, channels: Int, bitsPerSample: Int) -> Data {
+        let dataSize = pcmData.count
+        let byteRate = sampleRate * channels * bitsPerSample / 8
+        let blockAlign = channels * bitsPerSample / 8
+
+        var wav = Data()
+        // RIFF header
+        wav.append(contentsOf: "RIFF".utf8)
+        var fileSize = UInt32(36 + dataSize).littleEndian
+        wav.append(Data(bytes: &fileSize, count: 4))
+        wav.append(contentsOf: "WAVE".utf8)
+        // fmt chunk
+        wav.append(contentsOf: "fmt ".utf8)
+        var fmtSize = UInt32(16).littleEndian
+        wav.append(Data(bytes: &fmtSize, count: 4))
+        var audioFormat = UInt16(1).littleEndian // PCM
+        wav.append(Data(bytes: &audioFormat, count: 2))
+        var numChannels = UInt16(channels).littleEndian
+        wav.append(Data(bytes: &numChannels, count: 2))
+        var sr = UInt32(sampleRate).littleEndian
+        wav.append(Data(bytes: &sr, count: 4))
+        var br = UInt32(byteRate).littleEndian
+        wav.append(Data(bytes: &br, count: 4))
+        var ba = UInt16(blockAlign).littleEndian
+        wav.append(Data(bytes: &ba, count: 2))
+        var bps = UInt16(bitsPerSample).littleEndian
+        wav.append(Data(bytes: &bps, count: 2))
+        // data chunk
+        wav.append(contentsOf: "data".utf8)
+        var ds = UInt32(dataSize).littleEndian
+        wav.append(Data(bytes: &ds, count: 4))
+        wav.append(pcmData)
+        return wav
     }
 
     func interruptPlayback() {
