@@ -302,28 +302,24 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                         )
                         outputChannel.send(Frame.Text(llmResponse))
 
-                        // Buffer text for TTS — flush one sentence at a time (keep chunks small)
+                        // Buffer text for TTS — batch 1-2 sentences together
                         val text = chunk.choices.firstOrNull()?.delta?.content
                         if (text != null && enabledTts) {
                             textBuffer.append(text)
-                            // Flush each complete sentence individually
-                            while (true) {
-                                val buf = textBuffer.toString()
-                                val endIdx = listOf(
-                                    buf.indexOf(". "), buf.indexOf("! "), buf.indexOf("? "),
-                                    buf.indexOf(".\n"), buf.indexOf("!\n"), buf.indexOf("?\n"),
-                                ).filter { it >= 0 }.minOrNull()
-
-                                if (endIdx != null && endIdx < buf.length - 1) {
-                                    val sentence = buf.substring(0, endIdx + 1).trim()
-                                    if (sentence.isNotBlank()) {
-                                        SLog.i("TTS sentence: '${sentence.take(80)}'")
-                                        ttsTextChannel.send(sentence)
-                                    }
-                                    textBuffer.delete(0, endIdx + 2)
-                                } else {
-                                    break
+                            val buf = textBuffer.toString()
+                            // Only flush when we have enough text (50+ chars with sentence end)
+                            // This prevents "Hey!" from being sent alone
+                            val lastSentenceEnd = maxOf(
+                                buf.lastIndexOf(". "), buf.lastIndexOf("! "),
+                                buf.lastIndexOf("? "), buf.lastIndexOf(".\n"),
+                            )
+                            if (lastSentenceEnd >= 0 && buf.length >= 50) {
+                                val toSend = buf.substring(0, lastSentenceEnd + 1).trim()
+                                if (toSend.isNotBlank()) {
+                                    SLog.i("TTS batch: '${toSend.take(100)}'")
+                                    ttsTextChannel.send(toSend)
                                 }
+                                textBuffer.delete(0, lastSentenceEnd + 2)
                             }
                         }
                     }
