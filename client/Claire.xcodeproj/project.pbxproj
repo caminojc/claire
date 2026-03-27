@@ -172,10 +172,10 @@
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					230FC60F24E4F7D6F7E8449D = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = JW6WJ767VT;
 					};
 					CF6C56D9BC4D447D3BDC33FF = {
-						DevelopmentTeam = "";
+						DevelopmentTeam = JW6WJ767VT;
 					};
 				};
 			};
@@ -303,7 +303,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = JW6WJ767VT;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -343,9 +343,11 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
+				"LIBRARY_SEARCH_PATHS[sdk=macosx*]" = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
 				MARKETING_VERSION = 0.1.0;
-				OTHER_LDFLAGS = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=macosx*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
 				PRODUCT_BUNDLE_IDENTIFIER = com.caminojc.claire;
 				PRODUCT_NAME = Claire;
 				SDKROOT = macosx;
@@ -372,9 +374,11 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
+				"LIBRARY_SEARCH_PATHS[sdk=macosx*]" = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
 				MARKETING_VERSION = 0.1.0;
-				OTHER_LDFLAGS = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=macosx*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
 				PRODUCT_BUNDLE_IDENTIFIER = com.caminojc.claire;
 				PRODUCT_NAME = Claire;
 				SDKROOT = iphoneos;
@@ -419,7 +423,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = JW6WJ767VT;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
@@ -466,9 +470,11 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
+				"LIBRARY_SEARCH_PATHS[sdk=macosx*]" = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
 				MARKETING_VERSION = 0.1.0;
-				OTHER_LDFLAGS = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=macosx*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
 				PRODUCT_BUNDLE_IDENTIFIER = com.caminojc.claire;
 				PRODUCT_NAME = Claire;
 				SDKROOT = macosx;
@@ -495,9 +501,11 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
+				"LIBRARY_SEARCH_PATHS[sdk=macosx*]" = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
 				MARKETING_VERSION = 0.1.0;
-				OTHER_LDFLAGS = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=macosx*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
 				PRODUCT_BUNDLE_IDENTIFIER = com.caminojc.claire;
 				PRODUCT_NAME = Claire;
 				SDKROOT = iphoneos;

@@ -34,8 +34,12 @@ class CallManager: ObservableObject {
     private var callTimer: Timer?
     private var callStartTime: Date?
     private let webSocketClient = ClaireWebSocketClient()
+    #if os(macOS)
     private var audioBridge: ClaireAudioBridge?
     private let bridgeDelegate = BridgeDelegateAdapter()
+    #else
+    private let audioManager = AudioManager()
+    #endif
     private var conversationHistory: [[String: String]] = []
     private var currentLlmResponse: String = ""
     private var sessionUuid: String = ""
@@ -53,7 +57,9 @@ class CallManager: ObservableObject {
 
     init() {
         webSocketClient.delegate = self
+        #if os(macOS)
         bridgeDelegate.callManager = self
+        #endif
     }
 
     // MARK: - Call Lifecycle
@@ -86,17 +92,25 @@ class CallManager: ObservableObject {
 
     private func initAndConnect() {
         statusMessage = "Connecting..."
+        #if os(macOS)
         let modelDir = Bundle.main.resourcePath ?? ""
         audioBridge = ClaireAudioBridge(modelDirectory: modelDir)
         audioBridge?.delegate = bridgeDelegate
+        #else
+        audioManager.configureAudioSession()
+        #endif
         webSocketClient.connect()
     }
 
     func endCall() {
         state = .disconnecting
         stopTimer()
+        #if os(macOS)
         audioBridge?.stop()
         audioBridge = nil
+        #else
+        audioManager.stopCapture()
+        #endif
         ttsPlayer?.stop()
         webSocketClient.disconnect()
         state = .idle
@@ -168,7 +182,14 @@ class CallManager: ObservableObject {
         func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully: Bool) { cb() }
     }
 
-    func toggleMute() { isMuted.toggle(); audioBridge?.muteMic(isMuted) }
+    func toggleMute() {
+        isMuted.toggle()
+        #if os(macOS)
+        audioBridge?.muteMic(isMuted)
+        #else
+        audioManager.setMuted(isMuted)
+        #endif
+    }
     func toggleSpeaker() { isSpeakerOn.toggle() }
 
     // MARK: - Zipper SDK Callbacks
@@ -202,8 +223,13 @@ class CallManager: ObservableObject {
             Task { @MainActor in
                 guard let self, let start = self.callStartTime else { return }
                 self.callDuration = Date().timeIntervalSince(start)
+                #if os(macOS)
                 self.userLevel = self.audioBridge?.userSpeechLevel ?? 0
                 self.streamingLevel = self.audioBridge?.streamingLevel ?? 0
+                #else
+                self.userLevel = self.audioManager.userSpeechLevel
+                self.streamingLevel = self.audioManager.playoutLevel
+                #endif
             }
         }
     }
@@ -221,7 +247,22 @@ extension CallManager: ClaireWebSocketDelegate {
             state = .connected
             startTimer()
             webSocketClient.sendConfig(uuid: sessionUuid, codecUpstream: "pcm16_16kHz")
+            #if os(macOS)
             audioBridge?.start(withEncoderType: 2) // ENC_PCM16_16KHZ
+            #else
+            // iOS: use Swift AudioManager with VAD
+            audioManager.onSpeechSegment = { [weak self] segment in
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.currentLlmResponse = ""
+                    self.webSocketClient.sendAudio(uuid: UUID().uuidString, audioData: segment, messages: self.conversationHistory)
+                }
+            }
+            audioManager.onVADStateChanged = { [weak self] speaking in
+                Task { @MainActor in self?.isSpeaking = speaking }
+            }
+            audioManager.startCapture()
+            #endif
             statusMessage = ""
         }
     }
@@ -229,7 +270,12 @@ extension CallManager: ClaireWebSocketDelegate {
     nonisolated func didDisconnect() {
         Task { @MainActor in
             if state != .idle {
-                audioBridge?.stop(); state = .idle; stopTimer()
+                #if os(macOS)
+                audioBridge?.stop()
+                #else
+                audioManager.stopCapture()
+                #endif
+                state = .idle; stopTimer()
                 statusMessage = "Disconnected"
             }
         }
@@ -275,8 +321,11 @@ extension CallManager: ClaireWebSocketDelegate {
             case "tts_audio_result_response":
                 if let b64 = json["audio_base64"] as? String,
                    let audio = Data(base64Encoded: b64) {
-                    // Feed to Zipper SDK playout (handles AEC reference + ducking)
+                    #if os(macOS)
                     audioBridge?.addStreamingData(audio, streamId: currentStreamId, decoderFormat: 2, isEnd: false)
+                    #else
+                    playTtsAudio(audio)
+                    #endif
                 }
 
             case "config_response":
@@ -294,7 +343,8 @@ extension CallManager: ClaireWebSocketDelegate {
     nonisolated func didReceiveBinary(_ data: Data) {}
 }
 
-// MARK: - Bridge Delegate
+#if os(macOS)
+// MARK: - Bridge Delegate (macOS only — Zipper SDK)
 
 class BridgeDelegateAdapter: NSObject, ClaireAudioBridgeDelegate {
     weak var callManager: CallManager?
@@ -313,3 +363,4 @@ class BridgeDelegateAdapter: NSObject, ClaireAudioBridgeDelegate {
     func onStreamingStarted(_ streamId: Int32) {}
     func onStreamingStopped(_ streamId: Int32, timeMs: Int32) {}
 }
+#endif
