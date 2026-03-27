@@ -260,11 +260,11 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
             } else {
                 // === Phase 1: STT ===
                 SLog.i("Transcribing ${audioPayload.size} bytes (codec=$codecUpstream)...")
-                val sttText = if (codecUpstream == "smpl-mel") {
+                val sttText = if (codecUpstream == "smpl-mel" && sttNativeProcessor.isAvailable) {
                     // Native mel → whisper.cpp (GPU, direct mel path)
                     sttNativeProcessor.transcribeMel(audioPayload)
                 } else {
-                    // PCM → Parakeet (GPU, HTTP)
+                    // PCM → Parakeet (GPU, HTTP) or fallback for mel
                     sttServerClient.transcribe(audioPayload, codecUpstream)
                 }
                 SLog.i("STT result: '$sttText'")
