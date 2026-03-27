@@ -302,22 +302,25 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                         )
                         outputChannel.send(Frame.Text(llmResponse))
 
-                        // Buffer text for TTS — flush on complete sentences
+                        // Buffer text for TTS — flush one sentence at a time (keep chunks small)
                         val text = chunk.choices.firstOrNull()?.delta?.content
                         if (text != null && enabledTts) {
                             textBuffer.append(text)
-                            // Check if buffer ends with a sentence-ending punctuation
-                            val buf = textBuffer.toString()
-                            // Split on sentence boundaries, keep last incomplete part
-                            val sentenceEnders = Regex("(?<=[.!?])\\s+")
-                            val parts = buf.split(sentenceEnders)
-                            if (parts.size > 1) {
-                                // Send all complete sentences
-                                val complete = parts.dropLast(1).joinToString(" ")
-                                if (complete.isNotBlank()) {
-                                    SLog.i("TTS sentence: '${complete.take(60)}'")
-                                    ttsTextChannel.send(complete)
-                                }
+                            // Flush each complete sentence individually
+                            while (true) {
+                                val buf = textBuffer.toString()
+                                val endIdx = listOf(
+                                    buf.indexOf(". "), buf.indexOf("! "), buf.indexOf("? "),
+                                    buf.indexOf(".\n"), buf.indexOf("!\n"), buf.indexOf("?\n"),
+                                ).filter { it >= 0 }.minOrNull()
+
+                                if (endIdx != null && endIdx < buf.length - 1) {
+                                    val sentence = buf.substring(0, endIdx + 1).trim()
+                                    if (sentence.isNotBlank()) {
+                                        SLog.i("TTS sentence: '${sentence.take(80)}'")
+                                        ttsTextChannel.send(sentence)
+                                    }
+                                    textBuffer.delete(0, endIdx + 2)
                                 // Keep the incomplete part
                                 textBuffer.clear()
                                 textBuffer.append(parts.last())
