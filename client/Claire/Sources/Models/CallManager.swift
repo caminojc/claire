@@ -1,5 +1,9 @@
 import Foundation
 import Combine
+import AVFoundation
+#if os(macOS)
+import AVKit
+#endif
 
 enum CallState {
     case idle
@@ -48,18 +52,44 @@ class CallManager: ObservableObject {
 
     func startCall() {
         state = .connecting
-        statusMessage = "Connecting..."
+        statusMessage = "Requesting mic..."
         sessionUuid = UUID().uuidString
         conversationHistory = [
             ["role": "prompt", "content": "You are Claire, a helpful voice agent."]
         ]
 
-        // Init Zipper SDK with model directory
+        // Request mic permission first, then connect
+        #if os(macOS)
+        AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
+            Task { @MainActor in
+                if granted {
+                    self?.initAndConnect()
+                } else {
+                    self?.statusMessage = "Mic access denied"
+                    self?.state = .idle
+                }
+            }
+        }
+        #else
+        AVAudioApplication.requestRecordPermission { [weak self] granted in
+            Task { @MainActor in
+                if granted {
+                    self?.initAndConnect()
+                } else {
+                    self?.statusMessage = "Mic access denied"
+                    self?.state = .idle
+                }
+            }
+        }
+        #endif
+    }
+
+    private func initAndConnect() {
+        statusMessage = "Connecting..."
         let modelDir = Bundle.main.resourcePath ?? ""
         print("[Call] Init Zipper SDK with models at: \(modelDir)")
         audioBridge = ClaireAudioBridge(modelDirectory: modelDir)
         audioBridge?.delegate = bridgeDelegate
-
         webSocketClient.connect()
     }
 
