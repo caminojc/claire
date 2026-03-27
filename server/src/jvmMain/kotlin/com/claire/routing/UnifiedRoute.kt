@@ -321,9 +321,9 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                                         ttsTextChannel.send(sentence)
                                     }
                                     textBuffer.delete(0, endIdx + 2)
-                                // Keep the incomplete part
-                                textBuffer.clear()
-                                textBuffer.append(parts.last())
+                                } else {
+                                    break
+                                }
                             }
                         }
                     }
