@@ -19,6 +19,12 @@ class SttNativeProcessor {
         } catch (e: Exception) {
             SLog.e("Native mel STT init failed: ${e.message}")
             processor = null
+        } catch (e: UnsatisfiedLinkError) {
+            SLog.e("Native mel STT JNI not available: ${e.message}")
+            processor = null
+        } catch (e: Error) {
+            SLog.e("Native mel STT fatal: ${e.message}")
+            processor = null
         }
     }
 

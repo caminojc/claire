@@ -38,13 +38,13 @@ fun Application.module() {
         recordCrashlyticsLog = {},
     )
 
-    // Load native whisper.cpp + mel codec library
+    // Load native whisper.cpp + mel codec library (optional)
     try {
         System.loadLibrary("embedded_dynamic")
         SLog.i("Native library loaded (whisper.cpp + mel codec)")
-    } catch (e: UnsatisfiedLinkError) {
-        SLog.e("Native library not found: ${e.message}")
-        SLog.i("Mel codec STT will be unavailable — using Parakeet for PCM only")
+    } catch (e: Throwable) {
+        SLog.e("Native library not loaded: ${e.message}")
+        SLog.i("Mel STT unavailable — using Parakeet for PCM")
     }
 
     val koinApplication = initKoin()
