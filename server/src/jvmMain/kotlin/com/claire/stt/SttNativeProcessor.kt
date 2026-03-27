@@ -13,7 +13,7 @@ class SttNativeProcessor {
     fun init(modelDir: String) {
         try {
             processor = SttProcessor()
-            val instances = intArrayOf(0, 0, 0, 1) // 1x medium slot (large-v3 model)
+            val instances = intArrayOf(0, 0, 1, 0) // 1x small model
             processor!!.initSttProcessorContext(modelDir, instances)
             SLog.i("Native mel STT initialized (whisper.cpp GPU, models=$modelDir)")
         } catch (e: Exception) {
