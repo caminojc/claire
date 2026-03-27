@@ -66,6 +66,12 @@ val globalModule = module {
             }
         }
     }
+    single {
+        com.claire.stt.SttNativeProcessor().apply {
+            val modelDir = System.getenv("WHISPER_MODEL_DIR") ?: "models"
+            init(modelDir)
+        }
+    }
     single { AnthropicClient(get(), get()) }
     single { LocalLlmClient(get(), get()) }
     single { SttServerClient(get()) }

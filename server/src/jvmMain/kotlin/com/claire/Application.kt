@@ -37,6 +37,16 @@ fun Application.module() {
         recordCrashlyticsException = {},
         recordCrashlyticsLog = {},
     )
+
+    // Load native whisper.cpp + mel codec library
+    try {
+        System.loadLibrary("embedded_dynamic")
+        SLog.i("Native library loaded (whisper.cpp + mel codec)")
+    } catch (e: UnsatisfiedLinkError) {
+        SLog.e("Native library not found: ${e.message}")
+        SLog.i("Mel codec STT will be unavailable — using Parakeet for PCM only")
+    }
+
     val koinApplication = initKoin()
     val scope = koinApplication.koin.createScope<Application>()
     configureRouting(scope)

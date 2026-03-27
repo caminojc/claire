@@ -40,6 +40,7 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
     private val anthropicClient: AnthropicClient = scope.get()
     private val localLlmClient: com.claire.llm.LocalLlmClient = scope.get()
     private val sttServerClient: SttServerClient = scope.get()
+    private val sttNativeProcessor: com.claire.stt.SttNativeProcessor = scope.get()
     private val ttsServerClient: TtsServerClient = scope.get()
     private val json: Json = scope.get()
     private val useLocalLlm: Boolean = System.getenv("USE_LOCAL_LLM")?.toBoolean() ?: false
@@ -259,7 +260,13 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
             } else {
                 // === Phase 1: STT ===
                 SLog.i("Transcribing ${audioPayload.size} bytes (codec=$codecUpstream)...")
-                val sttText = sttServerClient.transcribe(audioPayload, codecUpstream)
+                val sttText = if (codecUpstream == "smpl-mel") {
+                    // Native mel → whisper.cpp (GPU, direct mel path)
+                    sttNativeProcessor.transcribeMel(audioPayload)
+                } else {
+                    // PCM → Parakeet (GPU, HTTP)
+                    sttServerClient.transcribe(audioPayload, codecUpstream)
+                }
                 SLog.i("STT result: '$sttText'")
                 if (sttText.isBlank() || isStale()) return
 
