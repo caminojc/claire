@@ -44,7 +44,7 @@ targets:
         GENERATE_INFOPLIST_FILE: false
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: 1
-        ASSETCATALOG_COMPILER_APPICON_NAME: ""
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_ENTITLEMENTS: Claire/Resources/Claire.entitlements
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait

@@ -328,7 +328,7 @@
 		24A2921BD58D0F4E0BD637E2 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CODE_SIGN_ENTITLEMENTS = Claire/Resources/Claire.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -357,7 +357,7 @@
 		8C6242F50BE6DB4C9B2DD553 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CODE_SIGN_ENTITLEMENTS = Claire/Resources/Claire.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -451,7 +451,7 @@
 		B91945E73279631E2AED305D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CODE_SIGN_ENTITLEMENTS = Claire/Resources/Claire.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
@@ -480,7 +480,7 @@
 		BEB5CF55ECF750D26ED668E6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CODE_SIGN_ENTITLEMENTS = Claire/Resources/Claire.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
