@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -189,6 +189,7 @@
 			);
 			mainGroup = 47F846C4D5AD4225F8EC6741;
 			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -330,18 +331,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CODE_SIGN_ENTITLEMENTS = Claire/Resources/Claire.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk",
-					"$(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded",
-					"$(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios",
-					"$(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop",
-					"$(PROJECT_DIR)/native",
-				);
+				HEADER_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop $(PROJECT_DIR)/native";
 				INFOPLIST_FILE = Claire/Resources/Info.plist;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -350,63 +343,12 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/native/build/ios-arm64",
-				);
-				"LIBRARY_SEARCH_PATHS[sdk=macosx*]" = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/native/build/macos-arm64",
-				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(inherited) $(PROJECT_DIR)/native/build/ios-arm64";
+				"LIBRARY_SEARCH_PATHS[sdk=macosx*]" = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
 				MARKETING_VERSION = 0.1.0;
-				"OTHER_LDFLAGS[sdk=iphoneos*]" = (
-					"-lclaire_native",
-					"-lSmplAFELib",
-					"-lSmplOpusOgg",
-					"-lSmplMelCodec",
-					"-lSegVoxVad",
-					"-lSmplCompressor",
-					"-lopus",
-					"-lc++",
-					"-framework",
-					AudioToolbox,
-					"-framework",
-					AVFoundation,
-					"-framework",
-					Accelerate,
-				);
-				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = (
-					"-lc++",
-					"-framework",
-					AVFoundation,
-					"-framework",
-					AudioToolbox,
-					"-framework",
-					Accelerate,
-				);
-				"OTHER_LDFLAGS[sdk=macosx*]" = (
-					"-lclaire_native",
-					"-lSmplAFELib",
-					"-lSmplOpusOgg",
-					"-lSmplMelCodec",
-					"-lSegVoxVad",
-					"-lSmplCompressor",
-					"-lopus",
-					"-lportaudio",
-					"-lc++",
-					"-framework",
-					CoreAudio,
-					"-framework",
-					AudioToolbox,
-					"-framework",
-					AVFoundation,
-					"-framework",
-					Accelerate,
-					"-framework",
-					AudioUnit,
-					"-framework",
-					CoreFoundation,
-				);
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lc++ -framework AudioToolbox -framework AVFoundation -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=macosx*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
 				PRODUCT_BUNDLE_IDENTIFIER = smpl.claire.ios;
 				PRODUCT_NAME = Claire;
 				SDKROOT = macosx;
@@ -424,14 +366,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk",
-					"$(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded",
-					"$(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios",
-					"$(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop",
-					"$(PROJECT_DIR)/native",
-				);
+				HEADER_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop $(PROJECT_DIR)/native";
 				INFOPLIST_FILE = Claire/Resources/Info.plist;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -440,63 +375,12 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/native/build/ios-arm64",
-				);
-				"LIBRARY_SEARCH_PATHS[sdk=macosx*]" = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/native/build/macos-arm64",
-				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(inherited) $(PROJECT_DIR)/native/build/ios-arm64";
+				"LIBRARY_SEARCH_PATHS[sdk=macosx*]" = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
 				MARKETING_VERSION = 0.1.0;
-				"OTHER_LDFLAGS[sdk=iphoneos*]" = (
-					"-lclaire_native",
-					"-lSmplAFELib",
-					"-lSmplOpusOgg",
-					"-lSmplMelCodec",
-					"-lSegVoxVad",
-					"-lSmplCompressor",
-					"-lopus",
-					"-lc++",
-					"-framework",
-					AudioToolbox,
-					"-framework",
-					AVFoundation,
-					"-framework",
-					Accelerate,
-				);
-				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = (
-					"-lc++",
-					"-framework",
-					AVFoundation,
-					"-framework",
-					AudioToolbox,
-					"-framework",
-					Accelerate,
-				);
-				"OTHER_LDFLAGS[sdk=macosx*]" = (
-					"-lclaire_native",
-					"-lSmplAFELib",
-					"-lSmplOpusOgg",
-					"-lSmplMelCodec",
-					"-lSegVoxVad",
-					"-lSmplCompressor",
-					"-lopus",
-					"-lportaudio",
-					"-lc++",
-					"-framework",
-					CoreAudio,
-					"-framework",
-					AudioToolbox,
-					"-framework",
-					AVFoundation,
-					"-framework",
-					Accelerate,
-					"-framework",
-					AudioUnit,
-					"-framework",
-					CoreFoundation,
-				);
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lc++ -framework AudioToolbox -framework AVFoundation -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=macosx*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
 				PRODUCT_BUNDLE_IDENTIFIER = smpl.claire.ios;
 				PRODUCT_NAME = Claire;
 				SDKROOT = iphoneos;
@@ -576,18 +460,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CODE_SIGN_ENTITLEMENTS = Claire/Resources/Claire.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk",
-					"$(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded",
-					"$(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios",
-					"$(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop",
-					"$(PROJECT_DIR)/native",
-				);
+				HEADER_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop $(PROJECT_DIR)/native";
 				INFOPLIST_FILE = Claire/Resources/Info.plist;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -596,63 +472,12 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/native/build/ios-arm64",
-				);
-				"LIBRARY_SEARCH_PATHS[sdk=macosx*]" = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/native/build/macos-arm64",
-				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(inherited) $(PROJECT_DIR)/native/build/ios-arm64";
+				"LIBRARY_SEARCH_PATHS[sdk=macosx*]" = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
 				MARKETING_VERSION = 0.1.0;
-				"OTHER_LDFLAGS[sdk=iphoneos*]" = (
-					"-lclaire_native",
-					"-lSmplAFELib",
-					"-lSmplOpusOgg",
-					"-lSmplMelCodec",
-					"-lSegVoxVad",
-					"-lSmplCompressor",
-					"-lopus",
-					"-lc++",
-					"-framework",
-					AudioToolbox,
-					"-framework",
-					AVFoundation,
-					"-framework",
-					Accelerate,
-				);
-				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = (
-					"-lc++",
-					"-framework",
-					AVFoundation,
-					"-framework",
-					AudioToolbox,
-					"-framework",
-					Accelerate,
-				);
-				"OTHER_LDFLAGS[sdk=macosx*]" = (
-					"-lclaire_native",
-					"-lSmplAFELib",
-					"-lSmplOpusOgg",
-					"-lSmplMelCodec",
-					"-lSegVoxVad",
-					"-lSmplCompressor",
-					"-lopus",
-					"-lportaudio",
-					"-lc++",
-					"-framework",
-					CoreAudio,
-					"-framework",
-					AudioToolbox,
-					"-framework",
-					AVFoundation,
-					"-framework",
-					Accelerate,
-					"-framework",
-					AudioUnit,
-					"-framework",
-					CoreFoundation,
-				);
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lc++ -framework AudioToolbox -framework AVFoundation -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=macosx*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
 				PRODUCT_BUNDLE_IDENTIFIER = smpl.claire.ios;
 				PRODUCT_NAME = Claire;
 				SDKROOT = macosx;
@@ -670,14 +495,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = NO;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk",
-					"$(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded",
-					"$(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios",
-					"$(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop",
-					"$(PROJECT_DIR)/native",
-				);
+				HEADER_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/zipperSdk $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/ios $(PROJECT_DIR)/../submodules/atria/composeApp/native/embedded/desktop $(PROJECT_DIR)/native";
 				INFOPLIST_FILE = Claire/Resources/Info.plist;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -686,63 +504,12 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/native/build/ios-arm64",
-				);
-				"LIBRARY_SEARCH_PATHS[sdk=macosx*]" = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/native/build/macos-arm64",
-				);
+				"LIBRARY_SEARCH_PATHS[sdk=iphoneos*]" = "$(inherited) $(PROJECT_DIR)/native/build/ios-arm64";
+				"LIBRARY_SEARCH_PATHS[sdk=macosx*]" = "$(inherited) $(PROJECT_DIR)/native/build/macos-arm64";
 				MARKETING_VERSION = 0.1.0;
-				"OTHER_LDFLAGS[sdk=iphoneos*]" = (
-					"-lclaire_native",
-					"-lSmplAFELib",
-					"-lSmplOpusOgg",
-					"-lSmplMelCodec",
-					"-lSegVoxVad",
-					"-lSmplCompressor",
-					"-lopus",
-					"-lc++",
-					"-framework",
-					AudioToolbox,
-					"-framework",
-					AVFoundation,
-					"-framework",
-					Accelerate,
-				);
-				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = (
-					"-lc++",
-					"-framework",
-					AVFoundation,
-					"-framework",
-					AudioToolbox,
-					"-framework",
-					Accelerate,
-				);
-				"OTHER_LDFLAGS[sdk=macosx*]" = (
-					"-lclaire_native",
-					"-lSmplAFELib",
-					"-lSmplOpusOgg",
-					"-lSmplMelCodec",
-					"-lSegVoxVad",
-					"-lSmplCompressor",
-					"-lopus",
-					"-lportaudio",
-					"-lc++",
-					"-framework",
-					CoreAudio,
-					"-framework",
-					AudioToolbox,
-					"-framework",
-					AVFoundation,
-					"-framework",
-					Accelerate,
-					"-framework",
-					AudioUnit,
-					"-framework",
-					CoreFoundation,
-				);
+				"OTHER_LDFLAGS[sdk=iphoneos*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lc++ -framework AudioToolbox -framework AVFoundation -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=iphonesimulator*]" = "-lc++ -framework AVFoundation -framework AudioToolbox -framework Accelerate";
+				"OTHER_LDFLAGS[sdk=macosx*]" = "-lclaire_native -lSmplAFELib -lSmplOpusOgg -lSmplMelCodec -lSegVoxVad -lSmplCompressor -lopus -lportaudio -lc++ -framework CoreAudio -framework AudioToolbox -framework AVFoundation -framework Accelerate -framework AudioUnit -framework CoreFoundation";
 				PRODUCT_BUNDLE_IDENTIFIER = smpl.claire.ios;
 				PRODUCT_NAME = Claire;
 				SDKROOT = iphoneos;
