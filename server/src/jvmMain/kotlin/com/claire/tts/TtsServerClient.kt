@@ -4,18 +4,21 @@ import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.utils.io.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.serialization.json.*
 import logging.SLog
 
 /**
- * Client for the local TTS (Kokoro) server running on port 1238.
- * Uses simple HTTP POST /synthesize endpoint.
+ * TTS client using streaming HTTP endpoint for low latency.
+ * Each audio chunk is sent to the client as soon as Kokoro generates it.
  */
 class TtsServerClient(
     private val httpClient: HttpClient,
 ) {
-    private val ttsServerUrl: String = System.getenv("TTS_SERVER_URL")?.replace("ws://", "http://")?.replace("wss://", "https://") ?: "http://localhost:1238"
+    private val ttsServerUrl: String = System.getenv("TTS_SERVER_URL")
+        ?.replace("ws://", "http://")?.replace("wss://", "https://")
+        ?: "http://localhost:1238"
     private val defaultVoice: String = System.getenv("CLAIRE_VOICE") ?: "af_heart"
 
     data class TtsAudioChunk(
@@ -24,51 +27,58 @@ class TtsServerClient(
         val textSegment: String = "",
     )
 
-    /**
-     * Synthesize TTS audio for the given text via HTTP POST.
-     * Simpler and more reliable than WebSocket streaming.
-     */
     suspend fun streamTts(
         text: String,
         outputChannel: Channel<TtsAudioChunk>,
         voice: String = defaultVoice,
-        outputFormat: String = "pcm",
-        sampleRate: Int = 24000,
         speed: Float = 1.0f,
     ) {
         try {
-            SLog.i("TTS: synthesizing '${text.take(50)}'")
+            SLog.i("TTS: streaming '${text.take(60)}'")
 
-            val response = httpClient.post("$ttsServerUrl/synthesize") {
+            // Use streaming endpoint — get chunks as they're generated
+            httpClient.preparePost("$ttsServerUrl/synthesize_stream") {
                 contentType(ContentType.Application.Json)
-                setBody("""{"text":"${text.replace("\"", "\\\"")}","voice":"$voice","speed":$speed}""")
-            }
-
-            if (response.status == HttpStatusCode.OK) {
-                val body = response.bodyAsText()
-                val jsonResponse = Json.parseToJsonElement(body).jsonObject
-                val audioBase64 = jsonResponse["audio_base64"]?.jsonPrimitive?.content
-
-                if (audioBase64 != null) {
-                    val audioBytes = java.util.Base64.getDecoder().decode(audioBase64)
-                    SLog.i("TTS: got ${audioBytes.size} bytes of audio")
-
-                    outputChannel.send(TtsAudioChunk(
-                        audio = audioBytes,
-                        isEnd = false,
-                        textSegment = text,
-                    ))
+                setBody("""{"text":"${text.replace("\"", "\\\"").replace("\n", " ")}","voice":"$voice","speed":$speed}""")
+            }.execute { response ->
+                if (response.status != HttpStatusCode.OK) {
+                    SLog.e("TTS stream: HTTP ${response.status}")
+                    outputChannel.send(TtsAudioChunk(ByteArray(0), true))
+                    return@execute
                 }
-            } else {
-                SLog.e("TTS: HTTP ${response.status}")
+
+                val channel = response.bodyAsChannel()
+                while (!channel.isClosedForRead) {
+                    val line = channel.readUTF8Line() ?: break
+                    if (line.isBlank()) continue
+
+                    try {
+                        val json = Json.parseToJsonElement(line).jsonObject
+                        val isLast = json["is_last"]?.jsonPrimitive?.boolean ?: false
+
+                        if (isLast) {
+                            SLog.i("TTS: stream complete")
+                            break
+                        }
+
+                        val audioB64 = json["audio_base64"]?.jsonPrimitive?.content ?: continue
+                        val audioBytes = java.util.Base64.getDecoder().decode(audioB64)
+                        val chunkIdx = json["chunk"]?.jsonPrimitive?.int ?: 0
+
+                        SLog.i("TTS: chunk $chunkIdx = ${audioBytes.size} bytes")
+                        outputChannel.send(TtsAudioChunk(audio = audioBytes, isEnd = false, textSegment = text))
+
+                    } catch (e: Exception) {
+                        SLog.e("TTS: parse error: ${e.message}")
+                    }
+                }
             }
 
-            // Signal end
-            outputChannel.send(TtsAudioChunk(audio = ByteArray(0), isEnd = true))
+            outputChannel.send(TtsAudioChunk(ByteArray(0), true))
 
         } catch (e: Exception) {
             SLog.e("TTS error: ${e.message}")
-            outputChannel.send(TtsAudioChunk(audio = ByteArray(0), isEnd = true))
+            outputChannel.send(TtsAudioChunk(ByteArray(0), true))
         }
     }
 

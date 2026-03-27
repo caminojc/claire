@@ -22,7 +22,7 @@ class AnthropicClient(
     private val json: Json,
 ) {
     private val apiKey: String = System.getenv("ANTHROPIC_API_KEY") ?: ""
-    private val model: String = System.getenv("CLAIRE_MODEL") ?: "claude-sonnet-4-20250514"
+    private val model: String = System.getenv("CLAIRE_MODEL") ?: "claude-haiku-4-5-20251001"
     private val apiUrl = "https://api.anthropic.com/v1/messages"
 
     companion object {

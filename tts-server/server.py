@@ -138,7 +138,6 @@ async def synthesize(request: Request):
             all_audio.append(audio_int16.tobytes())
 
         pcm_bytes = b"".join(all_audio)
-        import base64
         audio_b64 = base64.b64encode(pcm_bytes).decode("utf-8")
 
         return {"audio_base64": audio_b64, "sample_rate": SAMPLE_RATE, "format": "pcm_int16"}
@@ -146,6 +145,39 @@ async def synthesize(request: Request):
     except Exception as e:
         logger.error(f"Synthesize error: {e}")
         return PlainTextResponse(str(e), status_code=500)
+
+
+@app.post("/synthesize_stream")
+async def synthesize_stream(request: Request):
+    """Streaming TTS: POST text, get NDJSON stream of audio chunks."""
+    from starlette.responses import StreamingResponse
+
+    body = await request.json()
+    text = body.get("text", "").strip()
+    voice_name = body.get("voice", "af_heart")
+    speed_val = body.get("speed", 1.0)
+
+    if not text or tts_model is None:
+        return PlainTextResponse("no text or model", status_code=400)
+
+    async def generate():
+        try:
+            generator = tts_model(text, voice=voice_name, speed=speed_val)
+            for i, (gs, ps, audio) in enumerate(generator):
+                if audio is None:
+                    continue
+                audio_np = audio.numpy() if hasattr(audio, "numpy") else np.array(audio)
+                audio_int16 = (audio_np * 32767).astype(np.int16)
+                audio_bytes = audio_int16.tobytes()
+                audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+                chunk = json.dumps({"audio_base64": audio_b64, "chunk": i, "is_last": False})
+                yield chunk + "\n"
+            yield json.dumps({"is_last": True}) + "\n"
+        except Exception as e:
+            logger.error(f"Stream synthesize error: {e}")
+            yield json.dumps({"error": str(e)}) + "\n"
+
+    return StreamingResponse(generate(), media_type="application/x-ndjson")
 
 
 if __name__ == "__main__":
