@@ -64,10 +64,19 @@ class AnthropicClient(
             }
         }
 
+        // Use system prompt with cache_control for prompt caching
+        val systemArray = buildJsonArray {
+            addJsonObject {
+                put("type", "text")
+                put("text", system)
+                putJsonObject("cache_control") { put("type", "ephemeral") }
+            }
+        }
+
         val requestBody = buildJsonObject {
             put("model", model)
-            put("max_tokens", 1024)
-            put("system", system)
+            put("max_tokens", 256)  // Voice responses should be short
+            put("system", systemArray)
             put("messages", anthropicMessages)
             put("stream", true)
         }

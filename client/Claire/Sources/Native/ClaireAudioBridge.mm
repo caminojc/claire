@@ -91,6 +91,13 @@ public:
     int result = _client->Start();
     _running = (result == 0);
     NSLog(@"[ClaireAudio] Start result: %d (0=success), running=%d", result, _running);
+
+    if (_running) {
+        // Reduce VAD hangover for faster end-of-speech detection
+        // Lower = faster response but more likely to cut off mid-sentence
+        _client->SetTTSActiveMinVadDurationMs(200);
+        NSLog(@"[ClaireAudio] VAD min duration set to 200ms");
+    }
 }
 
 - (void)stop {
