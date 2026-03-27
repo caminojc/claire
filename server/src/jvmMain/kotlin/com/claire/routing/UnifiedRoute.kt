@@ -313,9 +313,14 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                             }
                         }
                     }
-                    // Flush remaining text
+                    // Flush remaining text — append period so TTS generates it fully
                     if (textBuffer.isNotEmpty()) {
-                        ttsTextChannel.send(textBuffer.toString())
+                        var remaining = textBuffer.toString().trim()
+                        if (remaining.isNotEmpty() && !remaining.endsWith(".") && !remaining.endsWith("!") && !remaining.endsWith("?")) {
+                            remaining += "."
+                        }
+                        SLog.i("LLM flush remaining: '$remaining'")
+                        ttsTextChannel.send(remaining)
                     }
                 } finally {
                     ttsTextChannel.close()
