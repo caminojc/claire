@@ -302,18 +302,11 @@ class UnifiedRoute(scope: org.koin.core.scope.Scope) : WebSocketRoute {
                         )
                         outputChannel.send(Frame.Text(llmResponse))
 
-                        // Buffer text for TTS — flush on sentence boundaries only
+                        // Buffer text for TTS — send whole response as one chunk
+                        // (avoids cutoff from aggressive sentence splitting)
                         val text = chunk.choices.firstOrNull()?.delta?.content
                         if (text != null && enabledTts) {
                             textBuffer.append(text)
-                            val buf = textBuffer.toString()
-                            // Flush on sentence-ending punctuation (not comma — too aggressive)
-                            if (buf.contains(". ") || buf.contains("! ") || buf.contains("? ") ||
-                                buf.endsWith(".") || buf.endsWith("!") || buf.endsWith("?") ||
-                                buf.endsWith(".\n") || buf.length > 200) {
-                                ttsTextChannel.send(buf)
-                                textBuffer.clear()
-                            }
                         }
                     }
                     // Flush remaining text — append period so TTS generates it fully
