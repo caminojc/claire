@@ -37,6 +37,7 @@ class CallManager: ObservableObject {
     private var sessionUuid: String = ""
     private var pendingPayloads: [Int32: Data] = [:]
     private var currentStreamId: Int32 = 0
+    private var ttsPlayer: AVAudioPlayer?
 
     var formattedDuration: String {
         let m = Int(callDuration) / 60, s = Int(callDuration) % 60
@@ -117,6 +118,34 @@ class CallManager: ObservableObject {
         statusMessage = "You: \(text)"
         currentLlmResponse = ""
         webSocketClient.sendAudio(uuid: UUID().uuidString, audioData: Data(), messages: conversationHistory)
+    }
+
+    private func playTtsAudio(_ pcmData: Data) {
+        // Wrap PCM int16 24kHz in WAV header for AVAudioPlayer
+        let sr = 24000, ch = 1, bps = 16
+        let byteRate = sr * ch * bps / 8
+        let blockAlign = ch * bps / 8
+        var wav = Data()
+        wav.append(contentsOf: "RIFF".utf8)
+        var fs = UInt32(36 + pcmData.count).littleEndian; wav.append(Data(bytes: &fs, count: 4))
+        wav.append(contentsOf: "WAVEfmt ".utf8)
+        var cs = UInt32(16).littleEndian; wav.append(Data(bytes: &cs, count: 4))
+        var af = UInt16(1).littleEndian; wav.append(Data(bytes: &af, count: 2))
+        var nc = UInt16(ch).littleEndian; wav.append(Data(bytes: &nc, count: 2))
+        var s = UInt32(sr).littleEndian; wav.append(Data(bytes: &s, count: 4))
+        var br = UInt32(byteRate).littleEndian; wav.append(Data(bytes: &br, count: 4))
+        var ba = UInt16(blockAlign).littleEndian; wav.append(Data(bytes: &ba, count: 2))
+        var bp = UInt16(bps).littleEndian; wav.append(Data(bytes: &bp, count: 2))
+        wav.append(contentsOf: "data".utf8)
+        var ds = UInt32(pcmData.count).littleEndian; wav.append(Data(bytes: &ds, count: 4))
+        wav.append(pcmData)
+
+        do {
+            ttsPlayer = try AVAudioPlayer(data: wav)
+            ttsPlayer?.play()
+        } catch {
+            print("[Call] TTS play error: \(error)")
+        }
     }
 
     func toggleMute() {
@@ -228,10 +257,12 @@ extension CallManager: ClaireWebSocketDelegate {
             case "tts_audio_result_response":
                 if let b64 = json["audio_base64"] as? String,
                    let audio = Data(base64Encoded: b64) {
-                    print("[Call] TTS: \(audio.count)b → Zipper playout")
-                    // Feed to Zipper SDK for playout (with AEC reference)
+                    print("[Call] TTS: \(audio.count)b")
+                    // Try Zipper SDK playout first (provides AEC reference)
                     audioBridge?.addStreamingData(audio, streamId: currentStreamId,
-                                                  decoderFormat: 2, isEnd: false) // DEC_PCM16_24KHZ=2
+                                                  decoderFormat: 2, isEnd: false)
+                    // Also play via AVAudioPlayer as fallback
+                    playTtsAudio(audio)
                 }
             case "config_response":
                 print("[Call] Config OK")
