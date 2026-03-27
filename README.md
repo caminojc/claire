@@ -1,100 +1,107 @@
 # Claire
 
-Voice AI agent for Claude. Phone-call style voice conversations powered by Claude's intelligence, the SMPL Atria audio stack, and self-hosted STT/TTS on NVIDIA DGX.
+Voice AI agent for Claude. Real-time voice conversations powered by Claude's intelligence, the SMPL audio stack (AFE, Zipper SDK, SegVox VAD), and self-hosted STT/TTS on NVIDIA DGX.
+
+## What It Does
+
+You talk. Claire listens (with echo cancellation), transcribes your speech, sends it to Claude, converts the response to speech, and plays it back — all in real time. Full duplex voice with barge-in support.
 
 ## Architecture
 
 ```
-Claire Client (macOS / iOS)              Claire Server (DGX)
-┌──────────────────────┐             ┌──────────────────────────┐
-│ Mic → SMPL AFE →     │  WebSocket  │ Realtime Server (Ktor)   │
-│ Mel Encode → ────────┼────────────→│   ├── STT (Parakeet)     │
-│                      │             │   ├── LLM (Claude API)   │
-│ Speaker ← Decode ←───┼────────────←│   └── TTS (Kokoro)       │
-└──────────────────────┘             └──────────────────────────┘
+Client (macOS / iOS)                    Server (DGX Spark)
+┌────────────────────┐               ┌────────────────────────┐
+│ Mic → SMPL AFE ──→ │  WebSocket    │ Realtime Server (Ktor) │
+│   PortAudio        │──────────────→│  ├─ STT (Parakeet)     │
+│   SegVox VAD       │               │  ├─ LLM (Claude API)   │
+│   PCM16 encoder    │               │  └─ TTS (Kokoro)       │
+│                    │←──────────────│                        │
+│ ←─ AVAudioPlayer   │  WebSocket    │  Streaming sentences   │
+│   Zipper playout   │               │  Base64 PCM chunks     │
+└────────────────────┘               └────────────────────────┘
 ```
 
-### Server Components
+### Client Stack
+- **SMPL Zipper SDK** — audio pipeline: capture, AFE, VAD, segmentation, playout
+- **SmplAFELib** — echo cancellation + noise suppression (NEON-optimized)
+- **SegVox VAD** — fast on-device voice activity detection
+- **PortAudio** — macOS audio I/O (CoreAudio backend)
+- **SwiftUI** — modern phone-call UI with animated audio energy background
 
-| Component | Stack | Port | Purpose |
-|-----------|-------|------|---------|
-| Realtime Server | Kotlin/Ktor | 8080 | WebSocket hub, orchestrates STT → Claude → TTS |
-| STT Server | Python/FastAPI | 1236 | Parakeet speech-to-text (GPU) |
-| TTS Server | Python/FastAPI | 1238 | Kokoro text-to-speech (GPU) |
-
-### Client Components (planned)
-
-Porting the SMPL Atria voice stack (C++) for native macOS + iOS:
-- Zipper SDK — VAD, segmentation, mel encoding, playout with barge-in
-- SmplCoreAudioEngine — CoreAudio I/O (no WebRTC)
-- Native transport — WebSocket + protobuf
-- SwiftUI app — minimal phone-call UI
+### Server Stack
+- **Kotlin/Ktor** — WebSocket hub on port 8080
+- **Parakeet v2** (NeMo) — GPU-accelerated speech-to-text on port 1236
+- **Kokoro-82M** — GPU-accelerated text-to-speech on port 1238
+- **Claude API** — Haiku for fast response, streaming tokens
 
 ## Quick Start
 
 ### Prerequisites
-- NVIDIA GPU with CUDA 12.4+
-- Docker with NVIDIA runtime
+- macOS 14+ with Xcode 16+
+- NVIDIA GPU server (DGX Spark or similar) with Docker or Python
 - Anthropic API key
 
-### Run with Docker
-
+### Build Client
 ```bash
-cp .env.example .env
-# Edit .env with your ANTHROPIC_API_KEY
+# Init submodules (Atria audio stack + shared models)
+git submodule update --init --recursive
 
-docker compose up --build
+# Build native C++ audio library
+cd client/native && ./build-ios.sh
+
+# Open in Xcode
+open client/Claire.xcodeproj
+# Select Claire_macOS scheme, Build & Run
 ```
 
-### Run Locally (Development)
-
+### Run Server
 ```bash
-# Terminal 1: STT server
+# On your GPU server:
+export ANTHROPIC_API_KEY=sk-ant-...
+
+# STT server
 cd stt-server && pip install -r requirements.txt
-python -m uvicorn server:app --host 0.0.0.0 --port 1236
+python -m uvicorn server:app --port 1236
 
-# Terminal 2: TTS server
+# TTS server
 cd tts-server && pip install -r requirements.txt
-python -m uvicorn server:app --host 0.0.0.0 --port 1238
+python -m uvicorn server:app --port 1238
 
-# Terminal 3: Realtime server
-cd server && ./gradlew run
+# Realtime server
+cd server && ../gradlew run
 ```
-
-### WebSocket Protocol
-
-Connect to `ws://host:8080/unified` and send:
-
-1. **Config** (JSON): session preferences (codec, TTS voice, etc.)
-2. **Payload** (protobuf or JSON): audio + chat history
-
-Server streams back: STT text → LLM tokens → TTS audio chunks.
-
-Protocol is compatible with the Atria native transport client.
 
 ## Configuration
 
 | Env Var | Default | Description |
 |---------|---------|-------------|
-| `ANTHROPIC_API_KEY` | — | Claude API key (required) |
-| `PORT` | 8080 | Realtime server port |
-| `STT_SERVER_URL` | `http://localhost:1236` | STT server URL |
-| `TTS_SERVER_URL` | `ws://localhost:1238` | TTS server WebSocket URL |
-| `CLAIRE_MODEL` | `claude-sonnet-4-20250514` | Claude model ID |
+| `ANTHROPIC_API_KEY` | — | Required |
+| `CLAIRE_MODEL` | `claude-haiku-4-5-20251001` | Claude model |
 | `CLAIRE_VOICE` | `af_heart` | Kokoro TTS voice |
+| `PORT` | `8080` | WebSocket server port |
+| `STT_SERVER_URL` | `http://localhost:1236` | STT endpoint |
+| `TTS_SERVER_URL` | `http://localhost:1238` | TTS endpoint |
 
 ## Project Structure
 
 ```
 claire/
-├── server/              # Kotlin realtime server (Ktor + WebSocket)
-├── stt-server/          # Python STT server (Parakeet)
-├── tts-server/          # Python TTS server (Kokoro)
+├── client/                    # macOS/iOS SwiftUI app
+│   ├── Claire/Sources/
+│   │   ├── Views/            # UI (ContentView)
+│   │   ├── Models/           # CallManager, ChatMessage
+│   │   ├── Network/          # WebSocket client
+│   │   ├── Audio/            # AudioManager (fallback)
+│   │   └── Native/           # ObjC++ bridge to Zipper SDK
+│   ├── native/               # CMake build for C++ audio lib
+│   └── Frameworks/           # SMPLAudioProcessing.xcframework
+├── server/                    # Kotlin realtime server
+├── stt-server/                # Python Parakeet STT
+├── tts-server/                # Python Kokoro TTS
 ├── submodules/
-│   └── atria-kotlin/    # Shared data models (protocol compat)
-├── docker-compose.yml
-├── supervisord.conf
-└── PLAN.md              # Detailed implementation plan
+│   ├── atria/                # SMPL audio stack (C++)
+│   └── atria-kotlin/         # Shared protocol models
+└── PLAN.md
 ```
 
 ## License
