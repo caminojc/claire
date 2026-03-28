@@ -70,11 +70,34 @@ class CallManager: ObservableObject {
     }
 
     private func initAndConnect() {
-        statusMessage = "Connecting..."
+        statusMessage = "Initializing..."
+
+        // Configure iOS audio session before Zipper SDK init
+        #if os(iOS)
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.playAndRecord, mode: .voiceChat,
+                                    options: [.defaultToSpeaker, .allowBluetoothA2DP])
+            try session.setPreferredSampleRate(48000)
+            try session.setPreferredIOBufferDuration(0.01)
+            try session.setActive(true)
+            print("[Call] iOS audio session configured")
+        } catch {
+            print("[Call] iOS audio session error: \(error)")
+        }
+        #endif
+
+        // Init Zipper SDK on background thread (model loading is heavy)
         let modelDir = Bundle.main.resourcePath ?? ""
-        audioBridge = ClaireAudioBridge(modelDirectory: modelDir)
-        audioBridge?.delegate = bridgeDelegate
-        webSocketClient.connect()
+        Task.detached {
+            let bridge = ClaireAudioBridge(modelDirectory: modelDir)
+            await MainActor.run {
+                self.audioBridge = bridge
+                self.audioBridge?.delegate = self.bridgeDelegate
+                self.statusMessage = "Connecting..."
+                self.webSocketClient.connect()
+            }
+        }
     }
 
     func endCall() {
